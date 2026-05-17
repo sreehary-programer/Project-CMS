@@ -1,0 +1,89 @@
+@using BCA007.Shared.DTOs
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <MudCard Elevation="0" Class="rounded-lg">
+             <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">Fee Payment Details</MudText>
+                </CardHeaderContent>
+                <CardHeaderActions>
+                    <MudIconButton Icon="@Icons.Material.Filled.Payment" Color="Color.Primary" />
+                </CardHeaderActions>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mb-4" Icon="@Icons.Material.Filled.Info">
+                    <MudText><strong>Student ID:</strong> @StudentId</MudText>
+                    <MudText><strong>Total Fee Amount:</strong> @TotalAmount.ToString("C")</MudText>
+                    <MudText><strong>Status:</strong> Unpaid</MudText>
+                </MudAlert>
+
+                <MudForm @ref="_form" @bind-IsValid="@_success">
+                    <MudGrid>
+                         <MudItem xs="12">
+                            <MudNumericField Value="@TotalAmount" Label="Amount Paid" Variant="Variant.Outlined" ReadOnly="true" Format="N2" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.CurrencyRupee" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudDatePicker Label="Payment Date" @bind-Date="PaymentDate" Required="true" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="ReceiptNumber" Label="Receipt Number" Required="true" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudSelect T="int" Label="Payment Method" @bind-Value="PaymentModeId" Required="true" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter">
+                                <MudSelectItem Value="2002">Cash</MudSelectItem>
+                                <MudSelectItem Value="2006">Cheque</MudSelectItem>
+                                <MudSelectItem Value="2007">Bank Transfer</MudSelectItem>
+                                <MudSelectItem Value="2008">UPI</MudSelectItem>
+                                <MudSelectItem Value="2003">Online</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                    </MudGrid>
+                </MudForm>
+            </MudCardContent>
+             <MudCardActions Class="pa-4 justify-end">
+                 <MudButton Variant="Variant.Text" OnClick="Cancel" Class="mr-2">Cancel</MudButton>
+                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit" StartIcon="@Icons.Material.Filled.Payment">Record Payment</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public string StudentName { get; set; }
+    [Parameter] public int StudentId { get; set; }
+    [Parameter] public decimal TotalAmount { get; set; }
+
+    public DateTime? PaymentDate { get; set; } = DateTime.Today;
+    public string ReceiptNumber { get; set; } = string.Empty;
+    public int PaymentModeId { get; set; } = 2002;
+
+    private MudForm _form;
+    private bool _success;
+
+    protected override void OnInitialized()
+    {
+        // Auto-generate a receipt number suggestion
+        ReceiptNumber = $"ALL-{DateTime.Now.Ticks}";
+    }
+
+    private void Submit()
+    {
+        _form.Validate();
+        if (_form.IsValid)
+        {
+            MudDialog.Close(DialogResult.Ok(new PayAllResult 
+            { 
+                PaymentDate = PaymentDate, 
+                ReceiptNumber = ReceiptNumber, 
+                PaymentModeId = PaymentModeId 
+            }));
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
+}

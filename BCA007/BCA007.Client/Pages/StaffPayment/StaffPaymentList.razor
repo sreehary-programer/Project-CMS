@@ -1,0 +1,271 @@
+@page "/staff-payments"
+@using BCA007.Shared.DTOs
+@using BCA007.Shared.Service.Users
+@inject IStaffPaymentService StaffPaymentService
+@inject IStaffService StaffService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" GutterBottom="true">Staff Payments & History</MudText>
+    
+    <style>
+        .blink-red {
+            animation: blinker 1s linear infinite;
+            background-color: #f44336 !important; /* Material Red 500 */
+            color: white !important;
+        }
+
+        @@keyframes blinker {
+            50% {
+                opacity: 0.5;
+            }
+        }
+        
+        .overdue-text {
+            color: #f44336;
+            font-weight: bold;
+        }
+    </style>
+
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+        <MudTabPanel Text="Staff List">
+            <MudTable T="StaffViewDto" Items="@staffList" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loadingStaff" LoadingProgressColor="Color.Info" Filter="new Func<StaffViewDto,bool>(FilterStaff)">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Staff Members</MudText>
+                    <MudSpacer />
+                    <MudTextField @bind-Value="staffSearchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Start Name</MudTh>
+                    <MudTh>Role</MudTh>
+                    <MudTh>Phone</MudTh>
+                    <MudTh>Due Date</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Staff Name">@context.FullName</MudTd>
+                    <MudTd DataLabel="Role">@context.RoleName</MudTd>
+                    <MudTd DataLabel="Phone">@context.PhoneNumber</MudTd>
+                    <MudTd DataLabel="Due Date">
+                        <MudDatePicker @bind-Date="context.NextPaymentDueDate" Variant="Variant.Outlined" PickerVariant="PickerVariant.Dialog" Margin="Margin.Dense" />
+                    </MudTd>
+                    <MudTd DataLabel="Status">
+                         <MudSelect @bind-Value="context.CurrentPaymentStatus" Variant="Variant.Outlined" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter">
+                            <MudSelectItem Value="@("Paid")">Paid</MudSelectItem>
+                            <MudSelectItem Value="@("Unpaid")">Unpaid</MudSelectItem>
+                            <MudSelectItem Value="@("Partial")">Partial</MudSelectItem>
+                            <MudSelectItem Value="@("Overdue")">Overdue</MudSelectItem>
+                        </MudSelect>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                             <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="@(() => SaveRow(context))" Size="Size.Small" Title="Save Status & Date" />
+                        <MudButton Variant="Variant.Filled" 
+                                   Color="Color.Success" 
+                                   Size="Size.Small" 
+                                   Class="@GetPayButtonClass(context)"
+                                   OnClick="@(() => PayStaff(context))">Pay Salary</MudButton>
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Payment History">
+            <MudTable T="StaffPaymentViewDto" Items="@payments" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loadingPayments" LoadingProgressColor="Color.Info" Filter="new Func<StaffPaymentViewDto,bool>(FilterPayments)">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Payment History</MudText>
+                    <MudSpacer />
+                    <!-- Filters -->
+                    <div class="d-flex align-center gap-2">
+                        <MudDatePicker Label="Date" @bind-Date="_paymentDateFilter" Clearable="true" Margin="Margin.Dense" Variant="Variant.Outlined" PickerVariant="PickerVariant.Dialog" Class="ma-1" Style="width: 160px;" />
+                        <MudDatePicker Label="Due Date" @bind-Date="_dueDateFilter" Clearable="true" Margin="Margin.Dense" Variant="Variant.Outlined" PickerVariant="PickerVariant.Dialog" Class="ma-1" Style="width: 160px;" />
+                         <MudSelect T="string" Label="Status" @bind-Value="_statusFilter" Clearable="true" Margin="Margin.Dense" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter" Class="ma-1" Style="width: 160px;">
+                            <MudSelectItem Value="@("Paid")">Paid</MudSelectItem>
+                            <MudSelectItem Value="@("Unpaid")">Unpaid</MudSelectItem>
+                            <MudSelectItem Value="@("Partial")">Partial</MudSelectItem>
+                            <MudSelectItem Value="@("Overdue")">Overdue</MudSelectItem>
+                        </MudSelect>
+                        <MudTextField @bind-Value="paymentSearchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" Margin="Margin.Dense" Variant="Variant.Outlined"></MudTextField>
+                    </div>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" Class="ml-4" OnClick="AddPayment">Add Payment</MudButton>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Id</MudTh>
+                    <MudTh>Staff Name</MudTh>
+                    <MudTh>Amount</MudTh>
+                    <MudTh Style="min-width:120px;">Date</MudTh>
+                    <MudTh Style="min-width:120px;">Due Date</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Salary Type</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Id">@context.Id</MudTd>
+                    <MudTd DataLabel="Staff Name">@context.FullName</MudTd>
+                    <MudTd DataLabel="Amount">@context.Amount.ToString("C")</MudTd>
+                    <MudTd DataLabel="Date" Style="white-space:nowrap;">@context.Payment_Date.ToString("dd MMM yyyy")</MudTd>
+                    <MudTd DataLabel="Due Date" Style="white-space:nowrap;">@(context.Due_Date?.ToString("dd MMM yyyy") ?? "-")</MudTd>
+                    <MudTd DataLabel="Status">@context.Status</MudTd>
+                    <MudTd DataLabel="Salary Type">@context.SalaryType</MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => EditPayment(context.Id))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => DeletePayment(context.Id))" />
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        </MudTabPanel>
+    </MudTabs>
+</MudContainer>
+
+@code {
+    private List<StaffViewDto> staffList = new();
+    private List<StaffPaymentViewDto> payments = new();
+    private bool _loadingStaff = true;
+    private bool _loadingPayments = true;
+    private string staffSearchString = "";
+    private string paymentSearchString = "";
+    private DateTime? _paymentDateFilter;
+    private DateTime? _dueDateFilter;
+    private string _statusFilter;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            _loadingStaff = true;
+            _loadingPayments = true;
+
+            // Execute sequentially to avoid DbContext concurrency issues
+            var allStaff = await StaffService.GetAllAsync();
+            // Filter for Teachers only
+            staffList = allStaff.Where(s => s.RoleName?.Contains("Teacher", StringComparison.OrdinalIgnoreCase) == true).ToList();
+            _loadingStaff = false;
+
+            payments = (await StaffPaymentService.GetAllStaffPaymentsAsync()).ToList();
+            _loadingPayments = false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data: {ex}");
+            Snackbar.Add($"Error loading data: {ex.Message}", Severity.Error);
+            _loadingStaff = false;
+            _loadingPayments = false;
+        }
+    }
+
+    private string GetPayButtonClass(StaffViewDto staff)
+    {
+        // Blink if overdue and not paid
+        if (staff.NextPaymentDueDate.HasValue && staff.NextPaymentDueDate < DateTime.Today && staff.CurrentPaymentStatus != "Paid")
+        {
+            return "blink-red";
+        }
+        return "";
+    }
+
+    private void SaveRow(StaffViewDto staff)
+    {
+        _ = UpdateRow(staff);
+    }
+
+    private async Task UpdateRow(StaffViewDto staff)
+    {
+        // Auto-set status to Pending if date is set and status is empty
+        if (staff.NextPaymentDueDate.HasValue && string.IsNullOrEmpty(staff.CurrentPaymentStatus))
+        {
+             staff.CurrentPaymentStatus = "Pending";
+        }
+
+        await StaffService.UpdatePaymentStatusAsync(staff.Id, staff.CurrentPaymentStatus, staff.NextPaymentDueDate);
+        Snackbar.Add("Staff status updated", Severity.Success);
+    }
+
+    private void PayStaff(StaffViewDto staff)
+    {
+        string dateStr = staff.NextPaymentDueDate?.ToString("yyyy-MM-dd") ?? "";
+        string status = staff.CurrentPaymentStatus ?? "";
+        Navigation.NavigateTo($"/staff-payments/add/{staff.Id}?dueDate={dateStr}&status={status}");
+    }
+
+    private bool FilterStaff(StaffViewDto element) => FilterFuncStaff(element, staffSearchString);
+
+    private bool FilterFuncStaff(StaffViewDto element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.FullName?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        if (element.RoleName?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        return false;
+    }
+
+    private void AddPayment()
+    {
+        Navigation.NavigateTo("/staff-payments/add");
+    }
+
+    private void EditPayment(int id)
+    {
+        Navigation.NavigateTo($"/staff-payments/edit/{id}");
+    }
+
+    private async Task DeletePayment(int id)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            "Warning", 
+            "Deleting can not be undone!", 
+            yesText:"Delete!", cancelText:"Cancel");
+        
+        if (result == true)
+        {
+            await StaffPaymentService.DeleteStaffPaymentAsync(id);
+            Snackbar.Add("Payment Deleted", Severity.Success);
+            await LoadData();
+        }
+    }
+
+    private bool FilterPayments(StaffPaymentViewDto element) => FilterFuncPayments(element, paymentSearchString, _paymentDateFilter, _dueDateFilter, _statusFilter);
+
+    private bool FilterFuncPayments(StaffPaymentViewDto element, string searchString, DateTime? date, DateTime? dueDate, string status)
+    {
+        // 1. Search String
+        bool matchesSearch = true;
+        if (!string.IsNullOrWhiteSpace(searchString))
+        {
+            matchesSearch = (element.FullName?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true) ||
+                            (element.SalaryType?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true);
+        }
+        if (!matchesSearch) return false;
+
+        // 2. Date Filter
+        if (date.HasValue && element.Payment_Date.Date != date.Value.Date)
+            return false;
+
+        // 3. Due Date Filter
+        if (dueDate.HasValue)
+        {
+             if (!element.Due_Date.HasValue || element.Due_Date.Value.Date != dueDate.Value.Date)
+                return false;
+        }
+
+        // 4. Status Filter
+        if (!string.IsNullOrEmpty(status) && !string.Equals(element.Status, status, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return true;
+    }
+}

@@ -1,0 +1,151 @@
+﻿@using BCA007.Shared.Service.Core
+@inject ISnackbar _snackbar
+@inject IClassService _serv
+@inject ILookupService _lookup
+<MudDialog>
+    <DialogContent>
+    @*     <EditForm >
+            <DataAnnotationsValidator /> *@
+            <MudForm @ref="_form" Model="Model">
+   
+
+            <MudSelect T="int?" @bind-Value="Model.Course_Id" 
+            Required="true" Label="Select a Course" 
+            Variant="Variant.Outlined" Placeholder="Please Select Course" 
+            Adornment="Adornment.Start" 
+            AdornmentIcon="@Icons.Material.Filled.BuildCircle" 
+            AdornmentColor="Color.Primary">
+                    @foreach (var _option in _courses)
+                    {
+                        <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                    }
+                </MudSelect>
+            <MudSelect T="int?" @bind-Value="Model.Batch_Id" Required="true" Label="Select a Batch" Variant="Variant.Outlined" Placeholder="Please Select Batch" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.AddModerator" AdornmentColor="Color.Primary">
+                    @foreach (var _option in _batches)
+                    {
+                        <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                    }
+                </MudSelect>
+            <MudSelect T="int?" @bind-Value="Model.Semester_Id" Required="true" Label="Select a Semester" Variant="Variant.Outlined" Placeholder="Please Select Semester" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.AddModerator" AdornmentColor="Color.Primary">
+                    @foreach (var _option in _semesters)
+                    {
+                        <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                    }
+                </MudSelect>
+            <MudSelect T="int?" @bind-Value="Model.Division_Id" Required="true" Label="Select a Division" Variant="Variant.Outlined" Placeholder="Please Select Division" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.AddModerator" AdornmentColor="Color.Primary">
+                    @foreach (var _option in _divisions)
+                    {
+                        <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudForm>
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <MudAlert Severity="Severity.Error" Dense Class="mt-2">
+                    @_error
+                </MudAlert>
+            }
+        @* </EditForm> *@
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Color="@(Action == "Delete" ? Color.Error : Color.Success)"
+                   Disabled="_loading"
+                   OnClick="SaveAsync">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate Size="Size.Small" />
+            }
+            else
+            {
+                @(Action == "Edit" ? "Update" : Action)
+
+            }
+        </MudButton>
+        <MudButton OnClick="Cancel">
+            Cancel
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [Parameter]
+    public ClassDto Model { get; set; } = new();
+    [Parameter]
+    public string Action { get; set; } = "Create";
+
+    [CascadingParameter]
+    private IMudDialogInstance _MudDialog { get; set; } = default!;
+
+    private MudForm _form = default!;
+    private bool _loading;
+    private string? _error;
+
+    private List<LookupItemDto> _courses = new();
+    private List<LookupItemDto> _batches = new();
+    private List<LookupItemDto> _semesters = new();
+    private List<LookupItemDto> _divisions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _courses = await _lookup.GetCoursesAsync();
+        _batches = await _lookup.GetBatchesAsync();
+        _semesters = await _lookup.GetSemestersAsync();
+        _divisions = await _lookup.GetDivisionsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    
+    private async Task SaveAsync()
+    {
+        _error = null;
+
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _loading = true;
+
+        try
+        {
+            if ((Model.Id == 0) || (Action == "Create"))
+            {
+                var created = await _serv.CreateAsync(Model);
+                Model.Id = created.Id;
+                _snackbar.Add("Class created successfully", Severity.Success);
+            }
+            else if (Action == "Delete")
+            {
+                await _serv.DeleteAsync(Model.Id);
+                _snackbar.Add("Class deleted successfully", Severity.Success);
+            }
+            else
+            {
+                await _serv.UpdateAsync(Model);
+                _snackbar.Add("Class updated successfully", Severity.Success);
+            }
+
+            _MudDialog.Close(DialogResult.Ok(Model));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add(ex.Message, Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            _error = "Unexpected error occurred.";
+            _snackbar.Add("Failed to save class", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        _MudDialog.Close(DialogResult.Cancel());
+    }
+}

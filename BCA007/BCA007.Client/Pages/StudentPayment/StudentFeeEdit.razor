@@ -1,0 +1,145 @@
+@page "/student-fees/add"
+@page "/student-fees/edit/{id:int}"
+@using BCA007.Shared.DTOs
+@using BCA007.Shared.Service.Student
+@inject IStudentPaymentService StudentPaymentService
+@inject IStudentService StudentService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudText Typo="Typo.h5" GutterBottom="true" Class="mb-4">@Title</MudText>
+    <MudCard Elevation="4" Class="rounded-lg">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Fee Information</MudText>
+            </CardHeaderContent>
+            <CardHeaderActions>
+                <MudIconButton Icon="@Icons.Material.Filled.Assignment" Color="Color.Primary" />
+            </CardHeaderActions>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudForm @ref="_form" @bind-IsValid="@_success">
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudAutocomplete T="int" Label="Student" @bind-Value="fee.Student_Id"
+                                         SearchFunc="@SearchStudent" ToStringFunc="@(id => { var s = studentList.FirstOrDefault(s => s.Id == id); return s != null ? $"{s.FullName} ({s.Class_Name})" : string.Empty; })"
+                                         ResetValueOnEmptyText="true" CoerceText="true" CoerceValue="true"
+                                         AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Primary" Required="true" Variant="Variant.Outlined" />
+                    </MudItem>
+                     <MudItem xs="12" md="6">
+                        <MudSelect T="int" Label="Fee Type" @bind-Value="fee.Fee_Type_Id" Required="true" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter">
+                            @foreach (var type in feeTypes)
+                            {
+                                <MudSelectItem Value="@type.Id">@type.Fee_Type_Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                         <MudNumericField @bind-Value="fee.Amount" Label="Amount" Variant="Variant.Outlined" Min="0" Required="true" Format="N2" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.CurrencyRupee"/>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudDatePicker Label="Due Date" @bind-Date="dueDate" Required="true" Variant="Variant.Outlined"/>
+                    </MudItem>
+                    <MudItem xs="12">
+                         <MudTextField @bind-Value="fee.Description" Label="Description" Variant="Variant.Outlined" Lines="3" Required="true" RequiredError="Description is required!" />
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
+        </MudCardContent>
+        <MudCardActions Class="pa-4 justify-end">
+            <MudButton Variant="Variant.Text" OnClick="Cancel" Class="mr-2">Cancel</MudButton>
+             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" StartIcon="@Icons.Material.Filled.Save">Save Fee</MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    [Parameter] public int? id { get; set; }
+
+    private StudentFeeDto fee = new StudentFeeDto { Due_Date = DateTime.Today, Status_Id = 6 }; // Default status: Pending (6) based on seed data
+    private DateTime? dueDate = DateTime.Today;
+    private List<StudentViewDto> studentList = new();
+    private List<FeeTypeDto> feeTypes = new();
+    private MudForm _form;
+    private bool _success;
+
+    private string Title => id.HasValue ? "Edit Fee" : "Add Fee";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Execute sequentially to avoid DbContext concurrency issues during pre-rendering
+        studentList = await StudentService.GetAllAsync();
+        feeTypes = (await StudentPaymentService.GetAllFeeTypesAsync()).ToList();
+
+        if (id.HasValue)
+        {
+            fee = await StudentPaymentService.GetStudentFeeByIdAsync(id.Value);
+            dueDate = fee.Due_Date;
+        }
+        else
+        {
+             // Default to Unpaid
+             var statuses = await StudentPaymentService.GetAllStatusesAsync();
+             var unpaidStatus = statuses.FirstOrDefault(s => s.Status.Equals("Unpaid", StringComparison.OrdinalIgnoreCase));
+             if (unpaidStatus != null)
+             {
+                 fee.Status_Id = unpaidStatus.Id;
+             }
+             else
+             {
+                 // Fallback if Unpaid not found (should not happen if seeded)
+                 fee.Status_Id = 6; 
+             }
+        }
+    }
+
+    private async Task<IEnumerable<int>> SearchStudent(string value, CancellationToken token)
+    {
+        // In real app, perform server-side search. Here filtering client-side list.
+        if (string.IsNullOrEmpty(value))
+            return studentList.Select(x => x.Id);
+        
+        return studentList.Where(x => x.FullName.Contains(value, StringComparison.InvariantCultureIgnoreCase)).Select(x => x.Id);
+    }
+
+    private async Task Save()
+    {
+        await _form.Validate();
+
+        if (_form.IsValid)
+        {
+            try
+            {
+                if (dueDate.HasValue)
+                {
+                    fee.Due_Date = dueDate.Value;
+                }
+
+                if (id.HasValue)
+                {
+                    await StudentPaymentService.UpdateStudentFeeAsync(fee);
+                    Snackbar.Add("Fee updated", Severity.Success);
+                }
+                else
+                {
+                    // Ensure Status is set if somehow 0
+                    if (fee.Status_Id == 0) fee.Status_Id = 6;
+                    await StudentPaymentService.AddStudentFeeAsync(fee);
+                    Snackbar.Add("Fee added", Severity.Success);
+                }
+                Navigation.NavigateTo("/student-fees", forceLoad: true);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error saving fee: {ex.Message}", Severity.Error);
+                Console.WriteLine($"Error saving fee: {ex}");
+            }
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/student-fees", forceLoad: true);
+    }
+}

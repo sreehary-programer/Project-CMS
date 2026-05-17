@@ -1,0 +1,206 @@
+﻿@using BCA007.Shared.Service.Core
+@using BCA007.Shared.Service.Users
+@inject ILookupService _lookup
+@inject ISnackbar _snackbar
+@inject IStaffService _serv
+<MudDialog>
+    <DialogContent>
+
+        <MudForm @ref="_form" Model="Model">
+            <MudGrid Spacing="3">
+
+                <!-- ================= LEFT COLUMN (Photo) ================= -->
+                <MudItem xs="12" md="4" Class="d-flex justify-center">
+                    <MudFileUpload T="IBrowserFile"
+                                   FilesChanged="OnPhotoSelected"
+                                   Accept="image/*">
+                        <ActivatorContent>
+                            <div style="position:relative; cursor:pointer;">
+
+                                <MudAvatar Elevation="3"
+                                           Size="Size.Large"
+                                           Style="width:150px;height:150px;border:solid 3px #717171">
+                                    <MudImage Src="@PreviewOrPhoto"
+                                              Style="object-fit:cover" />
+                                </MudAvatar>
+                            </div>
+                        </ActivatorContent>
+                    </MudFileUpload>
+                </MudItem>
+                <!-- ================= RIGHT COLUMN (Form) ================= -->
+                <MudItem xs="12" md="8">
+                    <MudGrid Spacing="2">
+
+                        <!-- Row 1 -->
+                        <MudItem xs="12" sm="6">
+                            <MudTextField @bind-Value="Model.UserName"
+                                          Label="Username"
+                                          Disabled="true" />
+                        </MudItem>
+
+                        <MudItem xs="12" sm="6">
+                            <MudSwitch @bind-Value="Model.IsLocked" Color="Color.Secondary" Label="Is Locked" />
+                        </MudItem>
+
+                        <!-- Row 2 -->
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="Model.Email"
+                                          For="@(() => Model.Email)"
+                                          Label="Email" InputType="InputType.Email"
+                                          Required="true" />
+                        </MudItem>
+
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="Model.FullName"
+                                          Label="Full Name"
+                                          Required="true" />
+                        </MudItem>
+
+                    </MudGrid>
+
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="Model.PhoneNumber"
+                                  Label="Phone Number" InputType="InputType.Number"
+                                  Required="true" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudDatePicker @bind-Date="Model.DateOfBirth"
+                                   Label="Date of Birth" />
+
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="int?" @bind-Value="Model.Gender_Id" Required="true" Label="Select a gender" Variant="Variant.Outlined" Placeholder="Please Select Gender" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.AddModerator" AdornmentColor="Color.Primary">
+                        @foreach (var _option in _gender)
+                        {
+                            <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="int?" @bind-Value="Model.RoleId" Required="true" Label="Select a Role" Variant="Variant.Outlined" Placeholder="Please Select Role" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.AddModerator" AdornmentColor="Color.Primary">
+                        @foreach (var _option in _role)
+                        {
+                            <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+
+        </MudForm>
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <MudAlert Severity="Severity.Error" Dense Class="mt-2">
+                @_error
+            </MudAlert>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Color="@(Action == "Delete" ? Color.Error : Color.Success)"
+                   Disabled="_loading"
+                   OnClick="SaveAsync">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate Size="Size.Small" />
+            }
+            else
+            {
+                @(Action == "Edit" ? "Update" : Action)
+
+            }
+        </MudButton>
+        <MudButton OnClick="Cancel">
+            Cancel
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter]
+    public StaffDto Model { get; set; } = new();
+    [Parameter]
+    public string Action { get; set; } = "Create";
+    [CascadingParameter]
+    private IMudDialogInstance _MudDialog { get; set; } = default!;
+
+    private MudForm _form = default!;
+    private List<LookupItemDto> _role = new();
+    private List<LookupItemDto> _gender = new();
+    private bool _loading;
+    private string? _error;
+
+    private IBrowserFile? _file;
+    private string? _preview;
+
+    private async Task OnPhotoSelected(IBrowserFile file)
+    {
+        _file = file;
+
+        using var ms = new MemoryStream();
+        await file.OpenReadStream(5_000_000).CopyToAsync(ms);
+
+        _preview =
+            $"data:{file.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
+    }
+
+    string PreviewOrPhoto =>
+        _preview ?? Model.ProfileURL ?? "/images/defaultuser.png";
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        _role = await _lookup.GetRoleAsync();
+        _gender = await _lookup.GetGendersAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+    
+
+    private async Task SaveAsync()
+    {
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+        _loading = true;
+        try
+        {
+            if ((Model.Id == 0) || (Action == "Create"))
+            {
+                await _serv.CreateAsync(Model, _file?.OpenReadStream(), _file?.Name);
+                _snackbar.Add("Staff created successfully", Severity.Success);
+            }
+            else if (Action == "Delete")
+            {
+                await _serv.DeleteAsync(Model.Id);
+                _snackbar.Add("Staff deleted successfully", Severity.Success);
+            }
+            else
+            {
+                await _serv.UpdateAsync(Model, _file?.OpenReadStream(), _file?.Name);
+                _snackbar.Add("Staff updated successfully", Severity.Success);
+            }
+
+            _MudDialog.Close(DialogResult.Ok(Model));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add(ex.Message, Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            _error = "Unexpected error occurred.";
+            _snackbar.Add("Failed to save Staff", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+    }
+    private void Cancel()
+    {
+        _MudDialog.Close(DialogResult.Cancel());
+    }
+}

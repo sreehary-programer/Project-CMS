@@ -1,0 +1,127 @@
+﻿@page "/library/bookIssueHistorylist"
+@using BCA007.Shared.Service.Library
+@inject ISnackbar _snackbar
+@inject IBookIssueHistoryViewService _serv
+@inject IDialogService _dialog
+<MudPaper Class="pa-0 mt-6">
+    <MudDataGrid Dense Hover Items="_list" Loading="_loading"
+                 QuickFilter="QuickFilter"
+                 SortMode="SortMode.Multiple"
+                 @ref="_grid">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Book Issue History List</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+
+            <MudButton StartIcon="@Icons.Material.Filled.Refresh"
+                       Color="Color.Primary" Size="Size.Small"
+                       OnClick="OnRefresh">
+                Refresh
+            </MudButton>
+        </ToolBarContent>
+
+        <Columns>
+            <PropertyColumn Property="x => x.Title" Title="Title" />
+            <PropertyColumn Property="x => x.Author" Title="Author" />
+            <PropertyColumn Property="x => x.UserName" Title="UserName" />
+            <PropertyColumn Property="x => x.FullName" Title="FullName" />
+            <PropertyColumn Property="x => x.Issued_To" Title="Issued To" />
+            <PropertyColumn Property="x => x.Book_Id" Title="Book Id" />
+            <PropertyColumn Property="x => x.Issue_Date" Title="Issue Date" Format="dd-MM-yyyy" />
+            <PropertyColumn Property="x => x.Return_Date" Title="Return Date" Format="dd-MM-yyyy" />
+            <PropertyColumn Property="x => x.Due_Date" Title="Due Date" Format="dd-MM-yyyy" />
+            <PropertyColumn Property="x => x.Fine" Title="Fine" />
+            @* <PropertyColumn Property="x => x.Issue_Date" Title="Issue Date" /> *@
+            @*  <PropertyColumn Property="x => x.Return_Date" Title="Return Date" /> *@
+            @*  <PropertyColumn Property="x => x.Due_Date" Title="Due Date" /> *@
+
+
+
+
+
+
+
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
+        </PagerContent>
+    </MudDataGrid>
+
+</MudPaper>
+
+@code {
+    private MudDataGrid<BookIssueHistoryViewDto> _grid;
+    private List<BookIssueHistoryViewDto> _list = new();
+
+    private bool _loading;
+    private string _searchString = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        OnRefresh();
+    }
+
+    private bool QuickFilter(BookIssueHistoryViewDto x)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        return x.Id.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Author.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Title.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Book_Id.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Due_Date.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.FullName.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Issued_To.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Return_Date.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Issue_Date.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.UserName.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Fine.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+
+    }
+
+    private void OnSearch(string text)
+    {
+        _searchString = text;
+        OnRefresh();
+    }
+
+    private async void OnRefresh()
+    {
+        try
+        {
+            _loading = true;
+            //await Task.Delay(700);
+            _list = await _serv.GetAllAsync();
+            await _grid.ReloadServerData(); // keeps sort & page
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Success);
+        }
+        finally
+        {
+            _loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    //     private async Task CreateDetails()
+    //     {
+    //     }
+
+    //     private async Task EditDetails(BookIssueHistoryViewDto dto)
+    //     {
+    //     }
+    //     private async Task DeleteDetails(BookIssueHistoryViewDto dto)
+    //     {
+
+    //     }
+    //     private async Task OpenDetailsDialog(BookIssueHistoryViewDto model, string action)
+    //     {
+
+
+
+    // }
+}

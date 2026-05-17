@@ -1,0 +1,129 @@
+@using BCA007.Shared.DTOs.Library
+@using BCA007.Shared.Service.Bus
+@inject ISnackbar _snackbar
+@inject IBusRouteService _serv
+@inject IBusService _busService
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" Model="Model">
+            <MudGrid Spacing="3">
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="Model.Route_Name"
+                                  Label="Route Name"
+                                  Required="true" 
+                                  Disabled="@(Action == "Delete")" />
+                </MudItem>
+                <MudItem xs="12">
+                     <MudNumericField @bind-Value="Model.Route_Price"
+                                      Label="Price"
+                                      Disabled="@(Action == "Delete")" />
+                 </MudItem>
+                 <MudItem xs="12">
+                      <MudSelect T="int?" Label="Bus" @bind-Value="Model.Bus_Id" AnchorOrigin="Origin.BottomCenter" Disabled="@(Action == "Delete")">
+                         @foreach (var bus in Buses)
+                         {
+                             <MudSelectItem T="int?" Value="@bus.Id">@bus.Bus_Name</MudSelectItem>
+                         }
+                     </MudSelect>
+                 </MudItem>
+            </MudGrid>
+        </MudForm>
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <MudAlert Severity="Severity.Error" Dense Class="mt-2">
+                @_error
+            </MudAlert>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="@(Action == "Delete" ? Color.Error : Color.Success)"
+                   Disabled="_loading"
+                   OnClick="SaveAsync">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate Size="Size.Small" />
+            }
+            else
+            {
+                @(Action == "Edit" ? "Update" : Action)
+            }
+        </MudButton>
+        <MudButton OnClick="Cancel">
+            Cancel
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter]
+    public BusRouteDto Model { get; set; } = new();
+    [Parameter]
+    public string Action { get; set; } = "Create";
+    [CascadingParameter]
+    private IMudDialogInstance _MudDialog { get; set; } = default!;
+
+    private MudForm _form = default!;
+    private bool _loading;
+    private string? _error;
+    private List<BusViewsDto> Buses = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Buses = await _busService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add($"Failed to load buses: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+        _loading = true;
+        try
+        {
+            if ((Model.Id == 0) || (Action == "Create"))
+            {
+                await _serv.CreateAsync(Model);
+                _snackbar.Add("Route created successfully", Severity.Success);
+            }
+            else if (Action == "Delete")
+            {
+                await _serv.DeleteAsync(Model.Id);
+                _snackbar.Add("Route deleted successfully", Severity.Success);
+            }
+            else
+            {
+                await _serv.UpdateAsync(Model);
+                _snackbar.Add("Route updated successfully", Severity.Success);
+            }
+
+            _MudDialog.Close(DialogResult.Ok(Model));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add(ex.Message, Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add($"Failed to save Route: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+    }
+    private void Cancel()
+    {
+        _MudDialog.Close(DialogResult.Cancel());
+    }
+}

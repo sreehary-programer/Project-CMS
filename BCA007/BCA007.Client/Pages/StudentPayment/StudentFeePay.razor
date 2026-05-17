@@ -1,0 +1,136 @@
+@page "/student-fees/pay/{feeId:int}"
+@using BCA007.Shared.DTOs
+@using BCA007.Shared.Service.Student
+@inject IStudentPaymentService StudentPaymentService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-4">
+    <MudText Typo="Typo.h5" GutterBottom="true" Class="mb-4">Record Payment</MudText>
+    
+    <MudCard Elevation="4" Class="rounded-lg">
+         <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Fee Payment Details</MudText>
+            </CardHeaderContent>
+            <CardHeaderActions>
+                <MudIconButton Icon="@Icons.Material.Filled.Payment" Color="Color.Primary" />
+            </CardHeaderActions>
+        </MudCardHeader>
+        <MudCardContent>
+             @if (fee != null)
+            {
+                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mb-4" Icon="@Icons.Material.Filled.Info">
+                    <MudText><strong>Student ID:</strong> @fee.Student_Id</MudText>
+                    <MudText><strong>Total Fee Amount:</strong> @fee.Amount.ToString("C")</MudText>
+                    <MudText><strong>Due Date:</strong> @fee.Due_Date.ToShortDateString()</MudText>
+                </MudAlert>
+
+                 <MudForm @ref="_form" @bind-IsValid="@_success">
+                    <MudGrid>
+                         <MudItem xs="12">
+                            <MudNumericField @bind-Value="payment.Amount_Paid" Label="Amount Paid" Variant="Variant.Outlined" Min="0" Max="@fee.Amount" Required="true" Format="N2" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.CurrencyRupee" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudDatePicker Label="Payment Date" @bind-Date="paymentDate" Required="true" Variant="Variant.Outlined"/>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="payment.Receipt_Number" Label="Receipt Number" Required="true" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12">
+                             <MudSelect T="int" Label="Payment Method" @bind-Value="payment.Payment_Id" Required="true" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter">
+                                <MudSelectItem Value="2002">Cash</MudSelectItem>
+                                <MudSelectItem Value="2006">Cheque</MudSelectItem>
+                                <MudSelectItem Value="2007">Bank Transfer</MudSelectItem>
+                                <MudSelectItem Value="2008">UPI</MudSelectItem>
+                                <MudSelectItem Value="2003">Online</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                    </MudGrid>
+                </MudForm>
+            }
+            else
+            {
+                <MudSkeleton Width="100%" Height="200px" />
+            }
+        </MudCardContent>
+         <MudCardActions Class="pa-4 justify-end">
+             <MudButton Variant="Variant.Text" OnClick="Cancel" Class="mr-2">Cancel</MudButton>
+             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" StartIcon="@Icons.Material.Filled.Payment" Disabled="@(fee == null)">Record Payment</MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    [Parameter] public int feeId { get; set; }
+
+    private StudentFeeDto fee;
+    private StudentPaymentDto payment = new StudentPaymentDto();
+    private DateTime? paymentDate = DateTime.Today;
+    private MudForm _form;
+    private bool _success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        fee = await StudentPaymentService.GetStudentFeeByIdAsync(feeId);
+        if (fee != null)
+        {
+            payment.Student_Fee_Id = fee.Id;
+            payment.Student_id = fee.Student_Id;
+            payment.Amount_Paid = fee.Amount; // Default to full amount
+        }
+    }
+
+    private async Task Save()
+    {
+        await _form.Validate();
+
+        if (_form.IsValid)
+        {
+            try
+            {
+                if (paymentDate.HasValue)
+                {
+                    payment.Paid_Date = paymentDate.Value;
+                }
+
+                await StudentPaymentService.AddStudentPaymentAsync(payment);
+                
+                // Fetch statuses to find IDs
+                var statuses = await StudentPaymentService.GetAllStatusesAsync();
+                var paidStatus = statuses.FirstOrDefault(s => s.Status.Equals("Paid", StringComparison.OrdinalIgnoreCase));
+                var partialStatus = statuses.FirstOrDefault(s => s.Status.Equals("Partial", StringComparison.OrdinalIgnoreCase));
+
+                if (payment.Amount_Paid >= fee.Amount)
+                {
+                    if (paidStatus != null) 
+                    {
+                        fee.Status_Id = paidStatus.Id; 
+                        await StudentPaymentService.UpdateStudentFeeAsync(fee);
+                    }
+                }
+                else if (payment.Amount_Paid > 0)
+                {
+                     if (partialStatus != null)
+                     {
+                         fee.Status_Id = partialStatus.Id;
+                         await StudentPaymentService.UpdateStudentFeeAsync(fee);
+                     }
+                }
+
+                Snackbar.Add("Payment recorded", Severity.Success);
+                Navigation.NavigateTo("/student-fees", forceLoad: true);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error recording payment: {ex.Message}", Severity.Error);
+                Console.WriteLine($"Error recording payment: {ex}");
+            }
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/student-fees", forceLoad: true);
+    }
+}

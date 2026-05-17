@@ -1,0 +1,839 @@
+﻿@page "/"
+
+<PageTitle>Home - BCA College Management System</PageTitle>
+
+@inject ISnackbar Snackbar
+
+@* ===== HERO BANNER ===== *@
+<MudPaper Class="pa-0 mb-6" Elevation="0" Style="border-radius: 16px; overflow: hidden; position: relative;">
+    <div class="hero-banner">
+        <div class="hero-orb hero-orb-1"></div>
+        <div class="hero-orb hero-orb-2"></div>
+        <div class="hero-orb hero-orb-3"></div>
+        <div class="hero-content">
+            <MudIcon Icon="@Icons.Material.Filled.School" Size="Size.Large" Style="font-size: 3.5rem; color: rgba(255,255,255,0.85);" />
+            <MudText Typo="Typo.h3" Style="color: white; font-weight: 800; margin-top: 14px; text-shadow: 0 2px 20px rgba(0,0,0,0.3); letter-spacing: -0.5px;">
+                BCA
+            </MudText>
+            <MudText Typo="Typo.h5" Style="color: rgba(255,255,255,0.9); font-weight: 300; margin-top: 2px; letter-spacing: 3px; text-transform: uppercase;">
+                College Management System
+            </MudText>
+            <MudText Typo="Typo.subtitle1" Style="color: rgba(255,255,255,0.6); margin-top: 10px; font-style: italic;">
+                Streamlining academic operations with modern technology
+            </MudText>
+        </div>
+    </div>
+</MudPaper>
+
+@* ===== ABOUT THE PROJECT ===== *@
+<MudText Typo="Typo.h4" Class="mb-2" Style="font-weight: 700;">
+    <MudIcon Icon="@Icons.Material.Filled.Info" Class="mr-2" Style="vertical-align: middle;" />
+    About the Project
+</MudText>
+<MudDivider Class="mb-4" />
+
+<MudText Typo="Typo.body1" Class="mb-4" Style="line-height: 1.9; text-align: justify;">
+    The <strong>Academic Management System (AMS)</strong> module is a core component of the College Management System (CMS).
+    This module is specifically designed to manage and automate academic-related processes within the institution.
+    While CMS handles multiple institutional operations, the AMS module focuses exclusively on academic workflow management.
+
+    The AMS module includes <strong>student enrollment management</strong>,
+    <strong>course and curriculum configuration</strong>,
+    <strong>semester and batch management</strong>,
+    <strong>faculty allocation</strong>,
+    <strong>timetable scheduling</strong>,
+    <strong>attendance tracking</strong>, and
+    <strong>examination and result processing</strong>.
+
+    The module operates under a structured <strong>Role-Based Access Control (RBAC)</strong> mechanism,
+    ensuring that Administrator, Faculty, Principal, and Student roles access only authorized academic features.
+    The architecture follows a clean layered design to ensure scalability, maintainability,
+    and secure academic data processing within the larger CMS ecosystem.
+</MudText>
+@* ===== ANIMATED STATS COUNTER ===== *@
+<div class="stats-container reveal-section">
+    <div class="stat-card">
+        <MudIcon Icon="@Icons.Material.Filled.TableChart" Style="font-size: 2rem; color: #7c4dff; margin-bottom: 8px;" />
+        <div class="stat-number">@animatedTables+</div>
+        <div class="stat-label">Database Tables</div>
+    </div>
+    <div class="stat-card">
+        <MudIcon Icon="@Icons.Material.Filled.People" Style="font-size: 2rem; color: #00bcd4; margin-bottom: 8px;" />
+        <div class="stat-number">@animatedRoles</div>
+        <div class="stat-label">User Roles</div>
+    </div>
+    <div class="stat-card">
+        <MudIcon Icon="@Icons.Material.Filled.ViewModule" Style="font-size: 2rem; color: #ff6f00; margin-bottom: 8px;" />
+        <div class="stat-number">@animatedModules+</div>
+        <div class="stat-label">Modules</div>
+    </div>
+    <div class="stat-card">
+        <MudIcon Icon="@Icons.Material.Filled.Build" Style="font-size: 2rem; color: #2e7d32; margin-bottom: 8px;" />
+        <div class="stat-number">@animatedTech</div>
+        <div class="stat-label">Technologies</div>
+    </div>
+</div>
+
+@* ===== KEY FEATURES (GLASSMORPHISM) ===== *@
+<MudText Typo="Typo.h4" Class="mt-10 mb-2 reveal-section" Style="font-weight: 700;">
+    <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Class="mr-2" Style="vertical-align: middle;" />
+    Key Features
+</MudText>
+<MudDivider Class="mb-5" />
+
+<MudGrid Spacing="4" Class="mb-8 reveal-section">
+    <MudItem xs="12" sm="6" md="4">
+        <div class="glass-card">
+            <MudIcon Icon="@Icons.Material.Filled.Security" Style="font-size: 2.5rem; color: #7c4dff;" />
+            <MudText Typo="Typo.h6" Style="font-weight: 700; margin-top: 12px;">Role-Based Access</MudText>
+            <MudText Typo="Typo.body2" Style="opacity: 0.8; margin-top: 6px;">
+                7 distinct roles — Admin, Teacher, Librarian, Accountant, Principal, Student, Parent — each with tailored permissions.
+            </MudText>
+        </div>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="4">
+        <div class="glass-card">
+            <MudIcon Icon="@Icons.Material.Filled.Schedule" Style="font-size: 2.5rem; color: #f44336;" />
+            <MudText Typo="Typo.h6" Style="font-weight: 700; margin-top: 12px;">Smart Attendance</MudText>
+            <MudText Typo="Typo.body2" Style="opacity: 0.8; margin-top: 6px;">
+                Auto-calculates Present, Half Day, or Absent based on check-in/check-out times with server-side intelligence.
+            </MudText>
+        </div>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="4">
+        <div class="glass-card">
+            <MudIcon Icon="@Icons.Material.Filled.DarkMode" Style="font-size: 2.5rem; color: #ffc107;" />
+            <MudText Typo="Typo.h6" Style="font-weight: 700; margin-top: 12px;">Dark / Light Mode</MudText>
+            <MudText Typo="Typo.body2" Style="opacity: 0.8; margin-top: 6px;">
+                Toggle between dark and light themes for a comfortable viewing experience in any lighting condition.
+            </MudText>
+        </div>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="4">
+        <div class="glass-card">
+            <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Style="font-size: 2.5rem; color: #00bcd4;" />
+            <MudText Typo="Typo.h6" Style="font-weight: 700; margin-top: 12px;">File Upload</MudText>
+            <MudText Typo="Typo.body2" Style="opacity: 0.8; margin-top: 6px;">
+                Upload team and profile photos with instant preview, cache-busting, and one-click deletion support.
+            </MudText>
+        </div>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="4">
+        <div class="glass-card">
+            <MudIcon Icon="@Icons.Material.Filled.Payment" Style="font-size: 2.5rem; color: #4caf50;" />
+            <MudText Typo="Typo.h6" Style="font-weight: 700; margin-top: 12px;">Fee Management</MudText>
+            <MudText Typo="Typo.body2" Style="opacity: 0.8; margin-top: 6px;">
+                Complete student and staff payment tracking with date filters, payment method filters, and history views.
+            </MudText>
+        </div>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="4">
+        <div class="glass-card">
+            <MudIcon Icon="@Icons.Material.Filled.Devices" Style="font-size: 2.5rem; color: #e91e63;" />
+            <MudText Typo="Typo.h6" Style="font-weight: 700; margin-top: 12px;">Responsive Design</MudText>
+            <MudText Typo="Typo.body2" Style="opacity: 0.8; margin-top: 6px;">
+                Fully responsive Material Design interface that works seamlessly across desktop, tablet, and mobile devices.
+            </MudText>
+        </div>
+    </MudItem>
+</MudGrid>
+
+@* ===== TECH STACK ===== *@
+<MudText Typo="Typo.h4" Class="mt-8 mb-2" Style="font-weight: 700;">
+    <MudIcon Icon="@Icons.Material.Filled.Code" Class="mr-2" Style="vertical-align: middle;" />
+    Technology Stack &amp; Frameworks
+</MudText>
+<MudDivider Class="mb-4" />
+
+<MudGrid Spacing="4" Class="mb-6">
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard Elevation="2" Style="border-radius: 12px; height: 100%;">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6" Color="Color.Primary">.NET 9 &amp; Blazor</MudText>
+                </CardHeaderContent>
+                <CardHeaderActions>
+                    <MudIcon Icon="@Icons.Material.Filled.Web" Color="Color.Primary" />
+                </CardHeaderActions>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText Typo="Typo.body2">
+                    The application is built on <strong>.NET 9</strong> using the <strong>Blazor</strong> framework in a
+                    hybrid Interactive Server + WebAssembly render mode. This allows server-side rendering for initial
+                    page loads while enabling rich client-side interactivity.
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard Elevation="2" Style="border-radius: 12px; height: 100%;">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6" Color="Color.Secondary">MudBlazor UI</MudText>
+                </CardHeaderContent>
+                <CardHeaderActions>
+                    <MudIcon Icon="@Icons.Material.Filled.Palette" Color="Color.Secondary" />
+                </CardHeaderActions>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText Typo="Typo.body2">
+                    The entire user interface is built with <strong>MudBlazor</strong>, a Material Design component
+                    library for Blazor. It provides pre-built, responsive, and accessible components like tables,
+                    dialogs, forms, navigation drawers, and snackbars.
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard Elevation="2" Style="border-radius: 12px; height: 100%;">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6" Color="Color.Tertiary">Entity Framework Core</MudText>
+                </CardHeaderContent>
+                <CardHeaderActions>
+                    <MudIcon Icon="@Icons.Material.Filled.Storage" Color="Color.Tertiary" />
+                </CardHeaderActions>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText Typo="Typo.body2">
+                    <strong>Entity Framework Core 9</strong> is used as the ORM (Object-Relational Mapper) that bridges
+                    the application code and the database. It supports migrations, LINQ queries, and change tracking
+                    for a smooth data-access experience.
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard Elevation="2" Style="border-radius: 12px; height: 100%;">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6" Color="Color.Info">Microsoft SQL Server</MudText>
+                </CardHeaderContent>
+                <CardHeaderActions>
+                    <MudIcon Icon="@Icons.Material.Filled.Dns" Color="Color.Info" />
+                </CardHeaderActions>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText Typo="Typo.body2">
+                    The back-end database is powered by <strong>Microsoft SQL Server (MSSQL)</strong>. All tables,
+                    views, and stored procedures are managed through SSMS 2022, and the application connects via
+                    the EF Core SQL Server provider.
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard Elevation="2" Style="border-radius: 12px; height: 100%;">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6" Color="Color.Warning">ASP.NET Identity</MudText>
+                </CardHeaderContent>
+                <CardHeaderActions>
+                    <MudIcon Icon="@Icons.Material.Filled.Lock" Color="Color.Warning" />
+                </CardHeaderActions>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText Typo="Typo.body2">
+                    Authentication and authorization are handled by <strong>ASP.NET Core Identity</strong>. It provides
+                    secure user registration, login, password hashing, role management, and two-factor authentication
+                    out of the box.
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard Elevation="2" Style="border-radius: 12px; height: 100%;">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6" Color="Color.Success">C# &amp; Razor</MudText>
+                </CardHeaderContent>
+                <CardHeaderActions>
+                    <MudIcon Icon="@Icons.Material.Filled.Terminal" Color="Color.Success" />
+                </CardHeaderActions>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText Typo="Typo.body2">
+                    The entire application logic — controllers, services, DTOs, and UI components — is written in
+                    <strong>C#</strong> with <strong>Razor</strong> syntax for component templates. The codebase follows
+                    a clean layered architecture with shared libraries.
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@* ===== ARCHITECTURE DIAGRAM ===== *@
+<MudText Typo="Typo.h4" Class="mt-10 mb-2 reveal-section" Style="font-weight: 700;">
+    <MudIcon Icon="@Icons.Material.Filled.AccountTree" Class="mr-2" Style="vertical-align: middle;" />
+    System Architecture
+</MudText>
+<MudDivider Class="mb-5" />
+
+<div class="arch-container reveal-section">
+    <div class="arch-layer arch-layer-1">
+        <MudIcon Icon="@Icons.Material.Filled.Web" Style="font-size: 1.8rem;" />
+        <div class="arch-layer-content">
+            <div class="arch-layer-title">Presentation Layer</div>
+            <div class="arch-layer-tech">Blazor WASM + MudBlazor</div>
+        </div>
+    </div>
+    <div class="arch-arrow">
+        <MudIcon Icon="@Icons.Material.Filled.SwapVert" Style="color: var(--mud-palette-primary); font-size: 1.6rem;" />
+        <span class="arch-arrow-label">HTTP / SignalR</span>
+    </div>
+    <div class="arch-layer arch-layer-2">
+        <MudIcon Icon="@Icons.Material.Filled.Api" Style="font-size: 1.8rem;" />
+        <div class="arch-layer-content">
+            <div class="arch-layer-title">Business Logic Layer</div>
+            <div class="arch-layer-tech">ASP.NET Controllers + Services + Identity</div>
+        </div>
+    </div>
+    <div class="arch-arrow">
+        <MudIcon Icon="@Icons.Material.Filled.SwapVert" Style="color: var(--mud-palette-primary); font-size: 1.6rem;" />
+        <span class="arch-arrow-label">Entity Framework Core</span>
+    </div>
+    <div class="arch-layer arch-layer-3">
+        <MudIcon Icon="@Icons.Material.Filled.Storage" Style="font-size: 1.8rem;" />
+        <div class="arch-layer-content">
+            <div class="arch-layer-title">Data Access Layer</div>
+            <div class="arch-layer-tech">Microsoft SQL Server + Views + Stored Procedures</div>
+        </div>
+    </div>
+</div>
+
+@* ===== PROJECT DEVELOPMENT JOURNEY (TIMELINE) ===== *@
+<MudText Typo="Typo.h4" Class="mt-8 mb-2" Style="font-weight: 700;">
+    <MudIcon Icon="@Icons.Material.Filled.RocketLaunch" Class="mr-2" Style="vertical-align: middle;" />
+    Project Development Journey
+</MudText>
+<MudDivider Class="mb-5" />
+
+<MudTimeline TimelinePosition="TimelinePosition.Alternate" Class="mb-8">
+
+    @* — Phase 1 — *@
+    <MudTimelineItem Color="Color.Primary" Variant="Variant.Filled" Size="Size.Medium"
+                     Icon="@Icons.Material.Filled.Description" Class="timeline-item" Style="animation-delay: 0.1s;">
+        <ItemContent>
+            <MudCard Elevation="4" Style="border-radius: 14px; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); overflow: hidden;">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6" Style="font-weight: 700; color: #1565c0;">📋 Requirement Analysis</MudText>
+                    <MudText Typo="Typo.body2" Style="color: #37474f; margin-top: 6px;">
+                        Defined academic workflows including student lifecycle, curriculum planning,
+                        faculty assignment, timetable generation, attendance policies, and examination processing.
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </ItemContent>
+    </MudTimelineItem>
+
+    @* — Phase 2 — *@
+    <MudTimelineItem Color="Color.Secondary" Variant="Variant.Filled" Size="Size.Medium"
+                     Icon="@Icons.Material.Filled.Storage" Class="timeline-item" Style="animation-delay: 0.25s;">
+        <ItemContent>
+            <MudCard Elevation="4" Style="border-radius: 14px; background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%); overflow: hidden;">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6" Style="font-weight: 700; color: #c2185b;">🗄️ Database Design</MudText>
+                    <MudText Typo="Typo.body2" Style="color: #37474f; margin-top: 6px;">
+                        Designed normalized academic schema including Student, Course, Semester,
+                        Attendance, Examination, and Academic Result tables.
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </ItemContent>
+    </MudTimelineItem>
+
+    @* — Phase 3 — *@
+    <MudTimelineItem Color="Color.Tertiary" Variant="Variant.Filled" Size="Size.Medium"
+                     Icon="@Icons.Material.Filled.Api" Class="timeline-item" Style="animation-delay: 0.4s;">
+        <ItemContent>
+            <MudCard Elevation="4" Style="border-radius: 14px; background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%); overflow: hidden;">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6" Style="font-weight: 700; color: #283593;">⚙️ Backend API Layer</MudText>
+                    <MudText Typo="Typo.body2" Style="color: #37474f; margin-top: 6px;">
+                        Implemented academic service layer and RESTful controllers
+                        for structured academic data processing.
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </ItemContent>
+    </MudTimelineItem>
+
+    @* — Phase 4 — *@
+    <MudTimelineItem Color="Color.Warning" Variant="Variant.Filled" Size="Size.Medium"
+                     Icon="@Icons.Material.Filled.Lock" Class="timeline-item" Style="animation-delay: 0.55s;">
+        <ItemContent>
+            <MudCard Elevation="4" Style="border-radius: 14px; background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); overflow: hidden;">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6" Style="font-weight: 700; color: #f57f17;">🔒 Authentication & RBAC</MudText>
+                    <MudText Typo="Typo.body2" Style="color: #37474f; margin-top: 6px;">
+                        Configured ASP.NET Identity with academic role hierarchy
+                        ensuring restricted access to AMS functionalities.
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </ItemContent>
+    </MudTimelineItem>
+
+    @* — Phase 5 — *@
+    <MudTimelineItem Color="Color.Info" Variant="Variant.Filled" Size="Size.Medium"
+                     Icon="@Icons.Material.Filled.Palette" Class="timeline-item" Style="animation-delay: 0.7s;">
+        <ItemContent>
+            <MudCard Elevation="4" Style="border-radius: 14px; background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); overflow: hidden;">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6" Style="font-weight: 700; color: #00838f;">🎨 Blazor UI & MudBlazor</MudText>
+                    <MudText Typo="Typo.body2" Style="color: #37474f; margin-top: 6px;">
+                        Developed responsive academic dashboards for administrators,
+                        faculty members, and students using MudBlazor components.
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </ItemContent>
+    </MudTimelineItem>
+
+    @* — Phase 6 — *@
+    <MudTimelineItem Color="Color.Success" Variant="Variant.Filled" Size="Size.Medium"
+                     Icon="@Icons.Material.Filled.ViewModule" Class="timeline-item" Style="animation-delay: 0.85s;">
+        <ItemContent>
+            <MudCard Elevation="4" Style="border-radius: 14px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); overflow: hidden;">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6" Style="font-weight: 700; color: #2e7d32;">📦 Module Development</MudText>
+                    <MudText Typo="Typo.body2" Style="color: #37474f; margin-top: 6px;">
+                        Implemented AMS submodules including Student Management,
+                        Course Allocation, Timetable Scheduling, Attendance Monitoring,
+                        and Examination & Result Processing.
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </ItemContent>
+    </MudTimelineItem>
+
+    @* — Phase 7 — *@
+    <MudTimelineItem Color="Color.Error" Variant="Variant.Filled" Size="Size.Medium"
+                     Icon="@Icons.Material.Filled.Schedule" Class="timeline-item" Style="animation-delay: 1.0s;">
+        <ItemContent>
+            <MudCard Elevation="4" Style="border-radius: 14px; background: linear-gradient(135deg, #fbe9e7 0%, #ffccbc 100%); overflow: hidden;">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6" Style="font-weight: 700; color: #c62828;">⏰ Smart Attendance</MudText>
+                    <MudText Typo="Typo.body2" Style="color: #37474f; margin-top: 6px;">
+                        Integrated rule-based attendance evaluation logic
+                        for academic compliance monitoring.
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </ItemContent>
+    </MudTimelineItem>
+
+    @* — Phase 8 — *@
+    <MudTimelineItem Color="Color.Dark" Variant="Variant.Filled" Size="Size.Medium"
+                     Icon="@Icons.Material.Filled.Verified" Class="timeline-item" Style="animation-delay: 1.15s;">
+        <ItemContent>
+            <MudCard Elevation="4" Style="border-radius: 14px; background: linear-gradient(135deg, #eceff1 0%, #cfd8dc 100%); overflow: hidden;">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6" Style="font-weight: 700; color: #37474f;">✅ Testing & Deployment</MudText>
+                    <MudText Typo="Typo.body2" Style="color: #37474f; margin-top: 6px;">
+                        Validated academic workflows, tested role permissions,
+                        and deployed the AMS module within the CMS platform.
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </ItemContent>
+    </MudTimelineItem>
+
+</MudTimeline>
+
+<style>
+    /* ===== ANIMATED HERO BANNER ===== */
+    .hero-banner {
+        position: relative;
+        width: 100%;
+        height: 320px;
+        border-radius: 16px;
+        overflow: hidden;
+        background: linear-gradient(-45deg, #0d1b2a, #1b2838, #162447, #1a1a40, #0d47a1, #1565c0, #0097a7, #00695c);
+        background-size: 400% 400%;
+        animation: gradientShift 12s ease infinite;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+        animation: heroFadeIn 1s ease-out;
+    }
+
+    .hero-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(60px);
+        opacity: 0.3;
+        animation: orbFloat 8s ease-in-out infinite;
+    }
+
+    .hero-orb-1 {
+        width: 200px;
+        height: 200px;
+        background: #7c4dff;
+        top: -40px;
+        left: -30px;
+        animation-delay: 0s;
+    }
+
+    .hero-orb-2 {
+        width: 160px;
+        height: 160px;
+        background: #00bcd4;
+        bottom: -30px;
+        right: 10%;
+        animation-delay: -3s;
+    }
+
+    .hero-orb-3 {
+        width: 120px;
+        height: 120px;
+        background: #ff6f00;
+        top: 20%;
+        right: -20px;
+        animation-delay: -6s;
+    }
+
+    @@keyframes gradientShift {
+        0% {
+            background-position: 0% 50%;
+        }
+
+        25% {
+            background-position: 100% 50%;
+        }
+
+        50% {
+            background-position: 100% 0%;
+        }
+
+        75% {
+            background-position: 0% 100%;
+        }
+
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+
+    @@keyframes orbFloat {
+        0%, 100% {
+            transform: translateY(0) scale(1);
+        }
+
+        50% {
+            transform: translateY(-20px) scale(1.1);
+        }
+    }
+
+    @@keyframes heroFadeIn {
+        0% {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ===== ANIMATED STATS COUNTER ===== */
+    .stats-container {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        flex-wrap: wrap;
+        margin: 32px 0;
+    }
+
+    .stat-card {
+        text-align: center;
+        padding: 24px 32px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, rgba(124, 77, 255, 0.08) 0%, rgba(0, 188, 212, 0.08) 100%);
+        border: 1px solid rgba(124, 77, 255, 0.15);
+        min-width: 140px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(124, 77, 255, 0.15);
+        }
+
+    .stat-number {
+        font-size: 2.4rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #7c4dff, #00bcd4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1.1;
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        opacity: 0.7;
+        margin-top: 4px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* ===== GLASSMORPHISM FEATURE CARDS ===== */
+    .glass-card {
+        padding: 28px 24px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.06);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        text-align: center;
+        height: 100%;
+        transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+
+        .glass-card:hover {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(124, 77, 255, 0.12);
+            border-color: rgba(124, 77, 255, 0.3);
+        }
+
+    /* ===== ARCHITECTURE DIAGRAM ===== */
+    .arch-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+        margin: 16px auto 40px auto;
+        max-width: 500px;
+    }
+
+    .arch-layer {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 28px;
+        border-radius: 14px;
+        width: 100%;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .arch-layer:hover {
+            transform: scale(1.03);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+    .arch-layer-1 {
+        background: linear-gradient(135deg, rgba(124, 77, 255, 0.12) 0%, rgba(124, 77, 255, 0.04) 100%);
+        border: 1px solid rgba(124, 77, 255, 0.25);
+        color: #7c4dff;
+    }
+
+    .arch-layer-2 {
+        background: linear-gradient(135deg, rgba(0, 188, 212, 0.12) 0%, rgba(0, 188, 212, 0.04) 100%);
+        border: 1px solid rgba(0, 188, 212, 0.25);
+        color: #00bcd4;
+    }
+
+    .arch-layer-3 {
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.12) 0%, rgba(76, 175, 80, 0.04) 100%);
+        border: 1px solid rgba(76, 175, 80, 0.25);
+        color: #4caf50;
+    }
+
+    .arch-layer-title {
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    .arch-layer-tech {
+        font-size: 0.8rem;
+        opacity: 0.7;
+        margin-top: 2px;
+    }
+
+    .arch-arrow {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 6px 0;
+        animation: arrowPulse 2s ease-in-out infinite;
+    }
+
+    .arch-arrow-label {
+        font-size: 0.7rem;
+        opacity: 0.5;
+        letter-spacing: 0.5px;
+    }
+
+    @@keyframes arrowPulse {
+        0%, 100% {
+            opacity: 0.6;
+        }
+
+        50% {
+            opacity: 1;
+        }
+    }
+
+    /* ===== SCROLL REVEAL ===== */
+    .reveal-section {
+        animation: revealFadeIn 0.8s ease-out both;
+    }
+
+    @@keyframes revealFadeIn {
+        0% {
+            opacity: 0;
+            transform: translateY(24px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ===== TIMELINE ANIMATION ===== */
+    @@keyframes timelineFadeIn {
+        0% {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .timeline-item {
+        opacity: 0;
+        animation: timelineFadeIn 0.6s ease-out forwards;
+    }
+</style>
+
+@* ===== TEAM SECTION ===== *@
+<MudText Typo="Typo.h4" Class="mt-8 mb-2" Style="font-weight: 700;">
+    <MudIcon Icon="@Icons.Material.Filled.Group" Class="mr-2" Style="vertical-align: middle;" />
+    Meet the Team
+</MudText>
+<MudDivider Class="mb-4" />
+
+<MudText Typo="Typo.body1" Class="mb-6" Style="line-height: 1.8; text-align: justify;">
+    This project was designed, developed, and tested by a dedicated team of three BCA students who collaborated
+    across all phases of the software development lifecycle — from requirement analysis and database design to
+    front-end development, API integration, and deployment.
+</MudText>
+
+<MudGrid Spacing="4" Justify="Justify.Center" Class="mb-8">
+    @foreach (var member in teamMembers)
+    {
+        var memberKey = member.Name.ToLower();
+        var photoPath = $"images/profile-{memberKey}.jpg";
+
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3" Style="border-radius: 16px; text-align: center; height: 100%;">
+                <MudCardContent Class="pt-6">
+                    @* ===== PROFILE PHOTO OR AVATAR ===== *@
+                    <div style="position: relative; width: 100px; height: 100px; margin: 0 auto 16px auto;">
+                        <MudAvatar Style="width: 100px; height: 100px; border: 3px solid var(--mud-palette-primary);">
+                            <MudImage Src="@photoPath" Alt="@member.Name"
+                                      ObjectFit="ObjectFit.Cover" Style="width: 100%; height: 100%;" />
+                        </MudAvatar>
+                    </div>
+
+                    <MudText Typo="Typo.h5" Style="font-weight: 600;">@member.Name</MudText>
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">@member.Role</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Default" Style="opacity: 0.8;">
+                        @member.Description
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    }
+</MudGrid>
+
+@* ===== FOOTER ===== *@
+<MudDivider Class="my-4" />
+<MudText Typo="Typo.caption" Align="Align.Center" Style="opacity: 0.5;" Class="pb-4">
+    © 2026 BCA Academic Management System — Built  by Sreehary, Adith &amp; Theerthan
+</MudText>
+
+@code {
+
+
+
+    // Stats counter fields
+    private int animatedTables = 0;
+    private int animatedRoles = 0;
+    private int animatedModules = 0;
+    private int animatedTech = 0;
+    private const int TargetTables = 20;
+    private const int TargetRoles = 7;
+    private const int TargetModules = 10;
+    private const int TargetTech = 6;
+    private Timer? counterTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+
+        StartCounterAnimation();
+    }
+
+    private void StartCounterAnimation()
+    {
+        counterTimer = new Timer(_ =>
+        {
+            bool done = true;
+            if (animatedTables < TargetTables) { animatedTables++; done = false; }
+            if (animatedRoles < TargetRoles) { animatedRoles++; done = false; }
+            if (animatedModules < TargetModules) { animatedModules++; done = false; }
+            if (animatedTech < TargetTech) { animatedTech++; done = false; }
+
+            InvokeAsync(StateHasChanged);
+
+            if (done)
+            {
+                counterTimer?.Dispose();
+            }
+        }, null, 300, 80);
+    }
+
+    private record TeamMember(string Name, string Initials, string Role, string Description, Color AvatarColor);
+
+    private readonly List<TeamMember> teamMembers = new()
+    {
+       new("Sreehary", "S", "Full-Stack Developer",
+    "Designed and implemented the overall AMS architecture within the CMS framework, " +
+    "developed core academic modules including Student Management, Course Allocation, and Timetable Scheduling, " +
+    "and handled database schema design with Entity Framework Core migrations.",
+    Color.Primary),
+
+new("Adith", "A", "Front-End & UI Developer",
+    "Developed the academic dashboards using MudBlazor, structured navigation for AMS workflows, " +
+    "implemented responsive layouts and theme management, and optimized user experience " +
+    "for student, faculty, and administrator academic interfaces.",
+    Color.Secondary),
+
+new("Theerthan", "T", "Back-End & API Developer",
+    "Implemented the AMS service layer and RESTful API controllers, configured role-based access control " +
+    "for academic operations, developed attendance evaluation logic, and managed authentication " +
+    "and authorization using ASP.NET Core Identity.",
+    Color.Tertiary)
+    };
+
+
+}

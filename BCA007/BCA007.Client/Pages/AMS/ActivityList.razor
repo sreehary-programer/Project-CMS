@@ -1,0 +1,238 @@
+﻿@page "/ams/activitylist"
+@using BCA007.Shared.DTOs.AMS
+@using BCA007.Shared.Service.AMS
+@inject ISnackbar _snackbar
+@inject IActivityService _serv
+@inject IDialogService _dialog
+<AuthorizeView>
+    <Authorized>
+<MudPaper Class="pa-0 mt-6">
+     
+    <MudDataGrid Dense Hover Items="_list" Loading="_loading"
+                 QuickFilter="QuickFilter"
+                 SortMode="SortMode.Multiple"
+                 @ref="_grid">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Activity List</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            <MudButtonGroup Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="CreateDetails">
+                    Add
+                </MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.Refresh"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Refresh
+                </MudButton>
+               @*  <MudButton StartIcon="@Icons.Material.Filled.Help"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Help
+                </MudButton> *@
+            </MudButtonGroup>
+        </ToolBarContent>
+
+        <Columns>
+            
+            @* <PropertyColumn Property="x => x.Id" Title="ID" /> *@
+            <PropertyColumn Property="x => x.Class_Name" Title="Class" />
+
+            <PropertyColumn Property="x => x.ActivityName" Title="Activity" />
+
+            <PropertyColumn Property="x => x.PlannedDate"
+                            Title="Planned Date"
+                            Format="dd-MM-yyyy" />
+
+            <PropertyColumn Property="x => x.PlannedTeacherName"
+                            Title="Planned Teacher" />
+            
+            <TemplateColumn Title="Status">
+                <CellTemplate Context="row">
+                    @{
+                        if (@row.Item.IsConducted == "Not Planned")
+                        {
+                            <MudChip T="string" Color="Color.Primary">Not Planned</MudChip>
+
+                        }
+                        else if (@row.Item.IsConducted == "Completed on time")
+                        {
+                            <MudChip T="string" Color="Color.Success">Completed on time</MudChip>
+
+                        }
+                        else if (@row.Item.IsConducted == "Completed late")
+                        {
+                            <MudChip T="string" Color="Color.Warning">Completed late</MudChip>
+
+                        }
+                        else if (@row.Item.IsConducted == "To be completed")
+                        {
+                            <MudChip T="string" Color="Color.Error">To be completed</MudChip>
+
+                        }
+                        else
+                        {
+                            <MudChip T="string" Color="Color.Error">Overdue</MudChip>
+
+                        }
+                    }
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Actions">
+                <CellTemplate Context="row">
+                    
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Color="Color.Primary" Size="Size.Small"
+                                   OnClick="@(() => EditDetails(row.Item))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Color="Color.Error" Size="Size.Small"
+                                   OnClick="@(() => DeleteDetails(row.Item))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
+        </PagerContent>
+    </MudDataGrid>
+
+</MudPaper>
+    </Authorized>
+    </AuthorizeView>
+@code {
+    private MudDataGrid<ActivityViewDto> _grid = default!;
+    private List<ActivityViewDto> _list = new();
+    private string _searchString = string.Empty;
+    private bool _loading;
+    protected override async Task OnInitializedAsync()
+    {
+        await OnRefresh();
+    }
+    private bool QuickFilter(ActivityViewDto x)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        return x.ActivityName.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.PlannedTeacherName.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.IsConducted.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Class_Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+
+    }
+
+    // private async Task OnRefresh()
+    // {
+    //     try
+    //     {
+    //         _loading = true;
+    //         //await Task.Delay(700);
+    //         _list = await _serv.GetAllAsync();
+    //         await _grid.ReloadServerData(); // keeps sort & page
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         _snackbar.Add(ex.Message, Severity.Success);
+    //     }
+    //     finally
+    //     {
+    //         _loading = false;
+    //         await InvokeAsync(StateHasChanged);
+    //     }
+    // }
+    private async Task OnRefresh()
+    {
+        try
+        {
+            _loading = true;
+
+            _list = await _serv.GetAllAsync();
+
+            if (_grid != null)
+                await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task CreateDetails()
+    {
+        await OpenDetailsDialog(new ActivityDto(), "Create");
+    }
+
+    private async Task EditDetails(ActivityViewDto dto)
+    {
+        // IMPORTANT: pass a COPY
+        await OpenDetailsDialog(new ActivityDto
+        {
+           Id = dto.Id,
+            ClassId = dto.ClassId,
+           // ActivityName=dto.ActivityName,
+            ActivityId=dto.ActivityId,
+            PlannedDate = dto.PlannedDate,
+            ConductedDate = dto.ConductedDate,
+            PlannedTeacherId = dto.PlannedTeacherId,
+            ConductedTeacherId = dto.ConductedTeacherId,
+            Feedback = dto.Feedback,
+            PeriodId=dto.PeriodId
+        }, "Edit");
+    }
+    private async Task DeleteDetails(ActivityViewDto dto)
+    {
+        await OpenDetailsDialog(new ActivityDto
+        {
+            Id = dto.Id,
+            ClassId = dto.ClassId,
+            // ActivityName=dto.ActivityName,
+            ActivityId = dto.ActivityId,
+            PlannedDate = dto.PlannedDate,
+            ConductedDate = dto.ConductedDate,
+            PlannedTeacherId = dto.PlannedTeacherId,
+            ConductedTeacherId = dto.ConductedTeacherId,
+            Feedback = dto.Feedback,
+            PeriodId = dto.PeriodId
+        }, "Delete");
+    }
+    private async Task OpenDetailsDialog(ActivityDto model, string action)
+    {
+        _loading = true;
+        var parameters = new DialogParameters
+        {
+            ["Model"] = model,
+            ["Action"] = action
+        };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false
+        };
+
+        var dialog = await _dialog.ShowAsync<ActivityEdit>(
+           $"{action} Activity",
+            parameters, options);
+
+        var result = await dialog.Result;
+        _loading = false;
+
+        if (result == null)
+            return;
+        if (result.Canceled)
+            return;
+        if (result.Data == null)
+            return;
+
+        await OnRefresh();
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

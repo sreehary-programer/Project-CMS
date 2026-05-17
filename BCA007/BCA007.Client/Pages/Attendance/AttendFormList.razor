@@ -1,0 +1,202 @@
+﻿@page "/Attendance/attendformlist"
+@using BCA007.Shared.Service.Attendance
+@inject ISnackbar _snackbar
+@inject IAttendFormService _serv
+@inject IDialogService _dialog
+@inject NavigationManager _nav
+<AuthorizeView>
+    <Authorized>
+<MudPaper Class="pa-0 mt-6">
+    <MudDataGrid Dense Hover Items="_list" Loading="_loading"
+                 QuickFilter="QuickFilter"
+                 SortMode="SortMode.Multiple"
+                 @ref="_grid">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Attendance Form</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            <MudButtonGroup Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="CreateDetails">
+                    Add
+                </MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.Refresh"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Refresh
+                </MudButton>
+               @*  <MudButton StartIcon="@Icons.Material.Filled.Help"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Help
+                </MudButton> *@
+            </MudButtonGroup>
+        </ToolBarContent>
+
+        <Columns>
+            <PropertyColumn Property="x => x.Class_Name" Title="Class Name" />
+            <PropertyColumn Property="x => x.Date" Title="Date" />
+           @*  <PropertyColumn Property="x => x.Period1_DefId" Title="Period " />  
+            <PropertyColumn Property="x => x.Period2_DefId" Title="Period" />
+            <PropertyColumn Property="x => x.Period3_DefId" Title="Period" />
+            <PropertyColumn Property="x => x.Period4_DefId" Title="Period" />
+            <PropertyColumn Property="x => x.Period5_DefId" Title="Period" /> *@
+            <TemplateColumn Title="Actions">
+                <CellTemplate Context="row">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Color="Color.Primary" Size="Size.Small"
+                                   OnClick="@(() => EditDetails(row.Item))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Color="Color.Error" Size="Size.Small"
+                                   OnClick="@(() => DeleteDetails(row.Item))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.School"
+                                   Color="Color.Success"
+                                   Size="Size.Small"
+                                   OnClick="@(() => _nav.NavigateTo($"/Attendance/attendentrylist/{row.Item.Id}"))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
+        </PagerContent>
+    </MudDataGrid>
+
+</MudPaper>
+</Authorized>
+</AuthorizeView>
+@code {
+    private MudDataGrid<AttendFormViewDto> _grid = default!;
+    private List<AttendFormViewDto> _list = new();
+    private string _searchString = string.Empty;
+    private bool _loading;
+    protected override async Task OnInitializedAsync()
+    {
+        await OnRefresh();
+    }
+    private bool QuickFilter(AttendFormViewDto x)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        return x.Class_Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Period1_DefId.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Period2_DefId.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Period3_DefId.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Period4_DefId.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Period5_DefId.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Period1_StaffId.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Period2_StaffId.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Period3_StaffId.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Period4_StaffId.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Period5_StaffId.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Teacher_Name1.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Teacher_Name2.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Teacher_Name3.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Teacher_Name4.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Teacher_Name5.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task OnRefresh()
+    {
+        try
+        {
+            _loading = true;
+            //await Task.Delay(700);
+            _list = await _serv.GetAllAsync();
+
+            if (_grid != null)
+                await _grid.ReloadServerData();// keeps sort & page
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Success);
+        }
+        finally
+        {
+            _loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task CreateDetails()
+    {
+        await OpenDetailsDialog(new AttendFormDto(), "Create");
+    }
+
+    private async Task EditDetails(AttendFormViewDto dto)
+    {
+        // IMPORTANT: pass a COPY
+        await OpenDetailsDialog(new AttendFormDto
+        {
+            Id = dto.Id,
+            Class_Id = dto.Class_Id,
+            Period1_DefId = dto.Period1_DefId,
+            Period1_StaffId = dto.Period1_StaffId,
+            Period2_DefId = dto.Period2_DefId,
+            Period2_StaffId = dto.Period2_StaffId,
+            Period3_DefId = dto.Period3_DefId,
+            Period3_StaffId = dto.Period3_StaffId,
+            Period4_DefId = dto.Period4_DefId,
+            Period4_StaffId = dto.Period4_StaffId,
+            Period5_DefId = dto.Period5_DefId,
+            Period5_StaffId = dto.Period5_StaffId,
+            Date=dto.Date
+        }, "Edit");
+    }
+    private async Task DeleteDetails(AttendFormViewDto dto)
+    {
+        await OpenDetailsDialog(new AttendFormDto
+        {
+            Id = dto.Id,
+            Class_Id = dto.Class_Id,
+            Period1_DefId = dto.Period1_DefId,
+            Period1_StaffId = dto.Period1_StaffId,
+            Period2_DefId = dto.Period2_DefId,
+            Period2_StaffId = dto.Period2_StaffId,
+            Period3_DefId = dto.Period3_DefId,
+            Period3_StaffId = dto.Period3_StaffId,
+            Period4_DefId = dto.Period4_DefId,
+            Period4_StaffId = dto.Period4_StaffId,
+            Period5_DefId = dto.Period5_DefId,
+            Period5_StaffId = dto.Period5_StaffId,
+            Date = dto.Date
+
+        }, "Delete");
+    }
+    private async Task OpenDetailsDialog(AttendFormDto model, string action)
+    {
+        _loading = true;
+        var parameters = new DialogParameters
+        {
+            ["Model"] = model,
+            ["Action"] = action
+        };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false
+        };
+
+        var dialog = await _dialog.ShowAsync<AttendFormEdit>(
+           $"{action} Attendance",
+            parameters, options);
+
+        var result = await dialog.Result;
+        _loading = false;
+
+        if (result == null)
+            return;
+        if (result.Canceled)
+            return;
+        if (result.Data == null)
+            return;
+
+        await OnRefresh();
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

@@ -1,0 +1,239 @@
+﻿@using BCA007.Shared.DTOs.AMS
+@using BCA007.Shared.Service.AMS
+@using BCA007.Shared.Service.Core
+@inject ISnackbar _snackbar
+@inject IExamService _serv
+@inject ILookupService _lookup
+
+<MudDialog>
+    <DialogContent>
+        @* <EditForm>
+            <DataAnnotationsValidator /> *@
+        <MudPaper Class="pa-6 mt-6 rounded-xl" Elevation="3">
+
+            <MudText Typo="Typo.h6" Class="mb-4">
+                Exam Creation
+            </MudText>
+
+            <MudForm @ref="_form" Model="Model">
+
+                <MudGrid Spacing="3">
+
+                    <!-- Academic Info -->
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="int?"
+                                   @bind-Value="Model.Class_Id"
+                                   Required="true"
+                                   Label="Class"
+                                   Variant="Variant.Outlined"
+                                   Adornment="Adornment.Start"
+                                   AdornmentIcon="@Icons.Material.Filled.School">
+                            @foreach (var option in _classes)
+                            {
+                                <MudSelectItem Value="@option.Id">
+                                    @option.Text
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="int?"
+                                   @bind-Value="Model.Subject_Id"
+                                   Required="true"
+                                   Label="Subject"
+                                   Variant="Variant.Outlined"
+                                   Adornment="Adornment.Start"
+                                   AdornmentIcon="@Icons.Material.Filled.MenuBook">
+                            @foreach (var option in _subject)
+                            {
+                                <MudSelectItem Value="@option.Id">
+                                    @option.Text
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="int?"
+                                   @bind-Value="Model.Session_Id"
+                                   Required="true"
+                                   Label="Session"
+                                   Variant="Variant.Outlined"
+                                   Adornment="Adornment.Start"
+                                   AdornmentIcon="@Icons.Material.Filled.CalendarMonth">
+                            @foreach (var option in _session)
+                            {
+                                <MudSelectItem Value="@option.Id">
+                                    @option.Text
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="int?"
+                                   @bind-Value="Model.ExamType_Id"
+                                   Required="true"
+                                   Label="Exam Type"
+                                   Variant="Variant.Outlined"
+                                   Adornment="Adornment.Start"
+                                   AdornmentIcon="@Icons.Material.Filled.Assignment">
+                            @foreach (var option in _examtype)
+                            {
+                                <MudSelectItem Value="@option.Id">
+                                    @option.Text
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <!-- Date & Time -->
+                    <MudItem xs="12" md="6">
+                        <MudDatePicker @bind-Date="Model.Date"
+                                       Label="Exam Date"
+                                       Required="true"
+                                       Variant="Variant.Outlined"
+                                       Adornment="Adornment.Start"
+                                       AdornmentIcon="@Icons.Material.Filled.Event" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudTimePicker @bind-Time="Model.Time"
+                                       Label="Exam Time"
+                                       AmPm="true"
+                                       Required="true"
+                                       Variant="Variant.Outlined"
+                                       Adornment="Adornment.Start"
+                                       AdornmentIcon="@Icons.Material.Filled.Schedule" />
+                    </MudItem>
+
+                    <!-- Marks -->
+                    <MudItem xs="12" md="6">
+                        <MudNumericField @bind-Value="Model.Max_Mark"
+                                         Label="Maximum Marks"
+                                         Variant="Variant.Outlined"
+                                         Min="0"
+                                         Max="100"
+                                         Required="true"
+                                         Adornment="Adornment.Start"
+                                         AdornmentIcon="@Icons.Material.Filled.Grade" />
+                    </MudItem>
+
+                </MudGrid>
+
+            </MudForm>
+
+        </MudPaper>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <MudAlert Severity="Severity.Error" Dense Class="mt-2">
+                @_error
+            </MudAlert>
+        }
+        @*  </EditForm> *@
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Color="@(Action == "Delete" ? Color.Error : Color.Success)"
+                   Disabled="_loading"
+                   OnClick="SaveAsync">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate Size="Size.Small" />
+            }
+            else
+            {
+                @(Action == "Edit" ? "Update" : Action)
+
+            }
+        </MudButton>
+        <MudButton OnClick="Cancel">
+            Cancel
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [Parameter]
+    public ExamTimeTableDto Model { get; set; } = new();
+    [Parameter]
+    public string Action { get; set; } = "";
+    private List<LookupItemDto> _classes = new();
+    private List<LookupItemDto> _subject = new();
+    private List<LookupItemDto> _session = new();
+    private List<LookupItemDto> _examtype = new();
+
+
+
+
+
+    [CascadingParameter]
+    private IMudDialogInstance _MudDialog { get; set; } = default!;
+
+    private MudForm _form = default!;
+    private bool _loading;
+    private string? _error;
+    protected override async Task OnInitializedAsync()
+    {
+        _subject = await _lookup.GetSubjetAsync();
+        _classes = await _lookup.GetClassesAsync();
+        _session = await _lookup.GetSessionAsync();
+         _examtype= await _lookup.GetExamTypeAsync();
+
+        await InvokeAsync(StateHasChanged);
+    }
+    private async Task SaveAsync()
+    {
+        _error = null;
+
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _loading = true;
+
+        try
+        {
+            if ((Model.Id == 0) || (Action == "Create"))
+            {
+                var created = await _serv.UpdateAsync(Model);
+                Model.Id = created.Id;
+                _snackbar.Add("Exam created successfully", Severity.Success);
+            }
+            else if (Action == "Delete")
+            {
+                await _serv.DeleteAsync(Model.Id);
+                _snackbar.Add("Exam deleted successfully", Severity.Success);
+            }
+            else
+            {
+                await _serv.UpdateAsync(Model);
+                _snackbar.Add("Exam updated successfully", Severity.Success);
+            }
+
+            _MudDialog.Close(DialogResult.Ok(Model));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add(ex.Message, Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add("Failed to save Exam", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        _MudDialog.Close(DialogResult.Cancel());
+    }
+}

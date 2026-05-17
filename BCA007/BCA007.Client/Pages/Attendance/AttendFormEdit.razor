@@ -1,0 +1,367 @@
+﻿@using BCA007.Shared.Service.Attendance
+@using BCA007.Shared.Service.Core
+@inject ISnackbar _snackbar
+@inject IAttendFormService _serv
+@inject ILookupService _lookup
+<MudDialog>
+    <DialogContent>
+        @*     <EditForm >
+            <DataAnnotationsValidator /> *@
+        <MudForm @ref="_form" Model="Model">
+
+            <!-- ================= HEADER SECTION ================= -->
+            <MudPaper Class="pa-4 mb-4" Elevation="1">
+                <MudText Typo="Typo.h6" Class="mb-3">Class & Date</MudText>
+
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="int?" @bind-Value="Model.Class_Id"
+                                   Required="true"
+                                   Label="Select a Class"
+                                   Variant="Variant.Outlined"
+                                   Placeholder="Please Select Class"
+                                   Adornment="Adornment.Start"
+                                   AdornmentIcon="@Icons.Material.Filled.AddModerator"
+                                   AdornmentColor="Color.Primary">
+                            @foreach (var _option in _class)
+                            {
+                                <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudDatePicker @bind-Date="Model.Date"
+                                       Label="Date"
+                                       Variant="Variant.Outlined" />
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+
+            <!-- ================= PERIOD SECTION ================= -->
+            <MudText Typo="Typo.h6" Class="mb-3">Periods</MudText>
+
+            <MudGrid Spacing="3">
+
+                <!-- PERIOD 1 -->
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="pa-4" Elevation="2">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Period 1</MudText>
+
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12">
+                                <MudSelect T="int?" @bind-Value="Model.Period1_StaffId"
+                                           Required="true"
+                                           Label="Select Period1 Staff"
+                                           Variant="Variant.Outlined"
+                                           Placeholder="Select Period1 Staff"
+                                           Adornment="Adornment.Start"
+                                           AdornmentIcon="@Icons.Material.Filled.AddModerator"
+                                           AdornmentColor="Color.Primary">
+                                    @foreach (var _option in _staff)
+                                    {
+                                        <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+
+                            <MudItem xs="12">
+                                <MudSelect T="int?" @bind-Value="Model.Period1_DefId"
+                                           Required="true"
+                                           Label="Select Period1 Attendance"
+                                           Variant="Variant.Outlined"
+                                           Placeholder="Please Select Period1 Attendance"
+                                           Adornment="Adornment.Start"
+                                           AdornmentIcon="@Icons.Material.Filled.AddModerator"
+                                           AdornmentColor="Color.Primary">
+                                    @foreach (var _option in _defperiod)
+                                    {
+                                        <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+
+
+                <!-- PERIOD 2 -->
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="pa-4" Elevation="2">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Period 2</MudText>
+
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12">
+                                <MudSelect T="int?" @bind-Value="Model.Period2_StaffId"
+                                           Required="true"
+                                           Label="Select Period2 Staff"
+                                           Variant="Variant.Outlined"
+                                           Placeholder="Select Period2 Staff"
+                                           Adornment="Adornment.Start"
+                                           AdornmentIcon="@Icons.Material.Filled.AddModerator"
+                                           AdornmentColor="Color.Primary">
+                                    @foreach (var _option in _staff)
+                                    {
+                                        <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+
+                            <MudItem xs="12">
+                                <MudSelect T="int?" @bind-Value="Model.Period2_DefId"
+                                           Required="true"
+                                           Label="Select Period2 Attendance"
+                                           Variant="Variant.Outlined"
+                                           Placeholder="Please Select Period2 Attendance"
+                                           Adornment="Adornment.Start"
+                                           AdornmentIcon="@Icons.Material.Filled.AddModerator"
+                                           AdornmentColor="Color.Primary">
+                                    @foreach (var _option in _defperiod)
+                                    {
+                                        <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+
+
+                <!-- PERIOD 3 -->
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="pa-4" Elevation="2">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Period 3</MudText>
+
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12">
+                                <MudSelect T="int?" @bind-Value="Model.Period3_StaffId"
+                                           Required="true"
+                                           Label="Select Period3 Staff"
+                                           Variant="Variant.Outlined"
+                                           Placeholder="Select Period3 Staff"
+                                           Adornment="Adornment.Start"
+                                           AdornmentIcon="@Icons.Material.Filled.AddModerator"
+                                           AdornmentColor="Color.Primary">
+                                    @foreach (var _option in _staff)
+                                    {
+                                        <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+
+                            <MudItem xs="12">
+                                <MudSelect T="int?" @bind-Value="Model.Period3_DefId"
+                                           Required="true"
+                                           Label="Select Period3 Attendance"
+                                           Variant="Variant.Outlined"
+                                           Placeholder="Please Select Period3 Attendance"
+                                           Adornment="Adornment.Start"
+                                           AdornmentIcon="@Icons.Material.Filled.AddModerator"
+                                           AdornmentColor="Color.Primary">
+                                    @foreach (var _option in _defperiod)
+                                    {
+                                        <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+
+
+                <!-- PERIOD 4 -->
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="pa-4" Elevation="2">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Period 4</MudText>
+
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12">
+                                <MudSelect T="int?" @bind-Value="Model.Period4_StaffId"
+                                           Required="true"
+                                           Label="Select Period4 Staff"
+                                           Variant="Variant.Outlined"
+                                           Placeholder="Select Period4 Staff"
+                                           Adornment="Adornment.Start"
+                                           AdornmentIcon="@Icons.Material.Filled.AddModerator"
+                                           AdornmentColor="Color.Primary">
+                                    @foreach (var _option in _staff)
+                                    {
+                                        <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+
+                            <MudItem xs="12">
+                                <MudSelect T="int?" @bind-Value="Model.Period4_DefId"
+                                           Required="true"
+                                           Label="Select Period4 Attendance"
+                                           Variant="Variant.Outlined"
+                                           Placeholder="Please Select Period4 Attendance"
+                                           Adornment="Adornment.Start"
+                                           AdornmentIcon="@Icons.Material.Filled.AddModerator"
+                                           AdornmentColor="Color.Primary">
+                                    @foreach (var _option in _defperiod)
+                                    {
+                                        <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+
+
+                <!-- PERIOD 5 -->
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="pa-4" Elevation="2">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Period 5</MudText>
+
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12">
+                                <MudSelect T="int?" @bind-Value="Model.Period5_StaffId"
+                                           Required="true"
+                                           Label="Select Period5 Staff"
+                                           Variant="Variant.Outlined"
+                                           Placeholder="Select Period5 Staff"
+                                           Adornment="Adornment.Start"
+                                           AdornmentIcon="@Icons.Material.Filled.AddModerator"
+                                           AdornmentColor="Color.Primary">
+                                    @foreach (var _option in _staff)
+                                    {
+                                        <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+
+                            <MudItem xs="12">
+                                <MudSelect T="int?" @bind-Value="Model.Period5_DefId"
+                                           Required="true"
+                                           Label="Select Period5 Attendance"
+                                           Variant="Variant.Outlined"
+                                           Placeholder="Please Select Period5 Attendance"
+                                           Adornment="Adornment.Start"
+                                           AdornmentIcon="@Icons.Material.Filled.AddModerator"
+                                           AdornmentColor="Color.Primary">
+                                    @foreach (var _option in _defperiod)
+                                    {
+                                        <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+
+            </MudGrid>
+
+        </MudForm>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <MudAlert Severity="Severity.Error" Dense Class="mt-2">
+                @_error
+            </MudAlert>
+        }
+        @* </EditForm> *@
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Color="@(Action == "Delete" ? Color.Error : Color.Success)"
+                   Disabled="_loading"
+                   OnClick="SaveAsync">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate Size="Size.Small" />
+            }
+            else
+            {
+                @(Action == "Edit" ? "Update" : Action)
+
+            }
+        </MudButton>
+        <MudButton OnClick="Cancel">
+            Cancel
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [Parameter]
+    public AttendFormDto Model { get; set; } = new();
+    [Parameter]
+    public string Action { get; set; } = "Create";
+
+    [CascadingParameter]
+    private IMudDialogInstance _MudDialog { get; set; } = default!;
+
+    private MudForm _form = default!;
+    private bool _loading;
+    private string? _error;
+
+    private List<LookupItemDto> _class = new();
+    private List<LookupItemDto> _staff = new();
+    private List<LookupItemDto> _defperiod = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _class = await _lookup.GetClassesAsync();
+        _staff = await _lookup.GetTeacherAsync();
+        _defperiod = await _lookup.GetAttendDefaultAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _loading = true;
+
+        try
+        {
+            if ((Model.Id == 0) || (Action == "Create"))
+            {
+                var created = await _serv.UpdateAsync(Model);
+                Model.Id = created.Id;
+                _snackbar.Add("Attendance created successfully", Severity.Success);
+            }
+            else if (Action == "Delete")
+            {
+                await _serv.DeleteAsync(Model.Id);
+                _snackbar.Add("Attendance deleted successfully", Severity.Success);
+            }
+            else
+            {
+                await _serv.UpdateAsync(Model);
+                _snackbar.Add("Attendance updated successfully", Severity.Success);
+            }
+
+            _MudDialog.Close(DialogResult.Ok(Model));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add(ex.Message, Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            _error = "Unexpected error occurred."+ex.Message;
+            _snackbar.Add("Failed to save Attendance", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        _MudDialog.Close(DialogResult.Cancel());
+    }
+}

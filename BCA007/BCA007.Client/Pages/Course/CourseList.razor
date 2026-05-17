@@ -1,0 +1,160 @@
+﻿@page "/Course/courselist"
+@inject ISnackbar _snackbar
+@inject ICourseService _serv
+@inject IDialogService _dialog
+
+<MudPaper Class="pa-0 mt-6">
+     <AuthorizeView>
+        <Authorized >
+    <MudDataGrid Dense Hover Items="_courses" Loading="_loading"
+                 QuickFilter="QuickFilter"
+                 SortMode="SortMode.Multiple"
+                 @ref="_grid">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Course List</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            <MudButtonGroup Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="CreateDetails">
+                    Add
+                </MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.Refresh"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Refresh
+                </MudButton>
+              @*   <MudButton StartIcon="@Icons.Material.Filled.Help"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Help
+                </MudButton> *@
+            </MudButtonGroup>
+        </ToolBarContent>
+
+        <Columns>
+            <PropertyColumn Property="x => x.Course_Code" Title="Code" />
+            <PropertyColumn Property="x => x.Course_Name" Title="Name" />
+            <TemplateColumn Title="Actions">
+                <CellTemplate Context="row">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Color="Color.Primary" Size="Size.Small"
+                                   OnClick="@(() => EditDetails(row.Item))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Color="Color.Error" Size="Size.Small"
+                                   OnClick="@(() => DeleteDetails(row.Item))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
+        </PagerContent>
+    </MudDataGrid>
+        </Authorized>
+    </AuthorizeView>
+</MudPaper>
+
+@code {
+    private MudDataGrid<CourseDto> _grid;
+    private List<CourseDto> _courses = new();
+    private string _searchString = string.Empty;
+    private bool _loading;
+    protected override async Task OnInitializedAsync()
+    {
+        OnRefresh();
+    }
+    private bool QuickFilter(CourseDto x)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        return x.Course_Code.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Course_Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Id.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+    }
+    private void OnSearch(string text)
+    {
+        _searchString = text;
+        OnRefresh();
+    }
+    private async void OnRefresh()
+    {
+        try
+        {
+            _loading = true;
+            //await Task.Delay(700);
+            _courses = await _serv.GetAllAsync();
+            await _grid.ReloadServerData(); // keeps sort & page
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Success);
+        }
+        finally
+        {
+            _loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task CreateDetails()
+    {
+        await OpenDetailsDialog(new CourseDto(), "Create");
+    }
+
+    private async Task EditDetails(CourseDto dto)
+    {
+        // IMPORTANT: pass a COPY
+        await OpenDetailsDialog(new CourseDto
+        {
+            Id = dto.Id,
+            Course_Name = dto.Course_Name,
+            Course_Code = dto.Course_Code
+        }, "Edit");
+    }
+    private async Task DeleteDetails(CourseDto dto)
+    {
+        await OpenDetailsDialog(new CourseDto
+        {
+            Id = dto.Id,
+            Course_Name = dto.Course_Name,
+            Course_Code = dto.Course_Code
+        }, "Delete");
+    }
+    private async Task OpenDetailsDialog(CourseDto model, string action)
+    {
+        _loading = true;
+        var parameters = new DialogParameters
+        {
+            ["Model"] = model,
+            ["Action"] = action
+        };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false
+        };
+
+        var dialog = await _dialog.ShowAsync<CourseEdit>(
+           $"{action} Course",
+            parameters, options);
+
+        var result = await dialog.Result;
+        _loading = false;
+
+        if (result == null)
+            return;
+        if (result.Canceled)
+            return;
+        if (result.Data == null)
+            return;
+
+        OnRefresh();
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

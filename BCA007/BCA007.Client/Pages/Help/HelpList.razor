@@ -1,0 +1,279 @@
+﻿@page "/help/helplist"
+@using MudBlazor
+@using System.Linq
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-10 mb-12">
+
+    <!-- HEADER -->
+    <MudText Typo="Typo.h4" Style="font-weight:600;">
+        Help & Support Center
+    </MudText>
+
+    <MudText Typo="Typo.subtitle1" Class="mb-10">
+        Click a topic below to view detailed help.
+    </MudText>
+
+    <!-- HELP CARDS -->
+    <MudPaper Class="pa-6 mb-6 help-section" Elevation="1">
+
+        <MudGrid Spacing="4">
+
+            @foreach (var item in helpTopics)
+            {
+                <MudItem xs="12" sm="6" md="4">
+
+                    <MudPaper Class="@GetCardClass(item.Key)"
+                              Elevation="1"
+                              Style="cursor:pointer;"
+                              @onclick="@(() => ShowSection(item.Key))">
+
+                        <MudStack Direction="Row"
+                                  AlignItems="AlignItems.Center"
+                                  Spacing="2">
+
+                            <MudIcon Icon="@item.Icon"
+                                     Color="Color.Primary" />
+
+                            <MudText Typo="Typo.subtitle1"
+                                     Style="font-weight:600;">
+                                @item.Title
+                            </MudText>
+
+                        </MudStack>
+
+                        <MudText Typo="Typo.body2" Class="mt-2">
+                            @item.ShortDescription
+                        </MudText>
+
+                    </MudPaper>
+
+                </MudItem>
+            }
+
+        </MudGrid>
+
+    </MudPaper>
+
+    <!-- DETAIL SECTION -->
+    @if (!string.IsNullOrEmpty(selectedSection))
+    {
+        var selectedItem = helpTopics.FirstOrDefault(x => x.Key == selectedSection);
+
+        if (selectedItem != null)
+        {
+            <MudPaper Class="pa-6 mb-12 detail-section" Elevation="3">
+
+                <MudText Typo="Typo.h6" Style="font-weight:600;">
+                    @selectedItem.Title
+                </MudText>
+
+                <MudDivider Class="my-3" />
+
+                <MudText Typo="Typo.body1" Style="line-height:1.8;">
+                    @((MarkupString)selectedItem.FullDescription)
+                </MudText>
+
+            </MudPaper>
+        }
+    }
+
+    <!-- CONTACT & LOCATION -->
+    <MudPaper Class="pa-8 contact-section" Elevation="1">
+
+        <MudGrid Spacing="6">
+
+            <!-- College Name -->
+            <MudItem xs="12">
+                <MudText Typo="Typo.h5"
+                         Align="Align.Center"
+                         Style="font-weight:600;">
+                    Dr. APJ Abdul Kalam College of Professional Studies
+                </MudText>
+            </MudItem>
+
+            <!-- MAP 3 | 6 | 3 -->
+            <MudItem xs="12" md="3"></MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="4" Class="pa-2">
+                    <div style="border-radius:20px; overflow:hidden;">
+                        <iframe src="https://www.google.com/maps?q=Dr. APJ Abdul Kalam College of Professional Studies, Vilamana, Ulikkal, Iritty, Kerala, India&output=embed"
+                                width="100%"
+                                height="420"
+                                style="border:0;"
+                                allowfullscreen
+                                loading="lazy">
+                        </iframe>
+                    </div>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" md="3"></MudItem>
+
+            <!-- CONTACT TABLE -->
+            <MudItem xs="12">
+
+                <MudPaper Elevation="2" Class="pa-4 contact-table-wrapper">
+
+                    <MudTable T="ContactInfo"
+                              Items="@contactDetails"
+                              Hover="true"
+                              Bordered="true"
+                              Breakpoint="Breakpoint.Sm"
+                              Class="contact-table">
+
+                        <HeaderContent>
+                            <MudTh Style="width:30%;">Contact Type</MudTh>
+                            <MudTh>Details</MudTh>
+                        </HeaderContent>
+
+                        <RowTemplate>
+                            <MudTd DataLabel="Contact Type">
+                                <b>@context.Type</b>
+                            </MudTd>
+
+                            <MudTd DataLabel="Details">
+                                @((MarkupString)context.Value)
+                            </MudTd>
+                        </RowTemplate>
+
+                    </MudTable>
+
+                </MudPaper>
+
+            </MudItem>
+
+        </MudGrid>
+
+    </MudPaper>
+
+    <!-- Footer Note -->
+    <MudText Typo="Typo.body2" Class="mt-4 text-muted">
+        And if you have any doubt, contact us using the details above.
+    </MudText>
+
+</MudContainer>
+
+@code {
+
+    private string selectedSection = "";
+
+    void ShowSection(string section)
+    {
+        selectedSection = section;
+        StateHasChanged();
+    }
+
+    string GetCardClass(string key)
+    {
+        return selectedSection == key
+            ? "pa-4 help-card active-card"
+            : "pa-4 help-card";
+    }
+
+    private List<HelpItem> helpTopics = new()
+    {
+        new HelpItem("Admission", "Admission & Application",
+            "Apply for courses and check eligibility.",
+            @"• Online admission process<br/>
+              • Required documents list<br/>
+              • Eligibility criteria<br/>
+              • Application tracking",
+            Icons.Material.Filled.School),
+
+        new HelpItem("Fees", "Fees & Scholarships",
+            "Fee payment and scholarship assistance.",
+            @"• Online fee payment<br/>
+              • Installment options<br/>
+              • Scholarship programs<br/>
+              • Refund policy",
+            Icons.Material.Filled.Payments),
+
+        new HelpItem("Academics", "Academics & Exams",
+            "Academic schedules and exam information.",
+            @"• Academic calendar<br/>
+              • Exam timetable<br/>
+              • Internal marks<br/>
+              • Revaluation procedure",
+            Icons.Material.Filled.MenuBook),
+
+        new HelpItem("Portal", "Student Portal Support",
+            "Help with login and account issues.",
+            @"• Login problems<br/>
+              • Password reset<br/>
+              • Attendance tracking<br/>
+              • Profile updates",
+            Icons.Material.Filled.Computer),
+
+        new HelpItem("Campus", "Campus & Facilities",
+            "Information about campus services.",
+            @"• Library timings<br/>
+              • Hostel information<br/>
+              • Bus routes<br/>
+              • Lab access rules",
+            Icons.Material.Filled.Apartment),
+
+        new HelpItem("Certificates", "Certificates & Documents",
+            "Request official certificates.",
+            @"• Bonafide certificate<br/>
+              • Transfer certificate<br/>
+              • Conduct certificate<br/>
+              • ID card replacement",
+            Icons.Material.Filled.Description)
+    };
+
+    private List<ContactInfo> contactDetails = new()
+    {
+        new ContactInfo("Phone", "+91 7909 1000 81, 82, 83"),
+        new ContactInfo("Email", "apjcollegeps@gmail.com"),
+        new ContactInfo("Address", "Vilamana, Ulikkal, Iritty - 670706<br/>Kerala, India")
+    };
+
+    public record HelpItem(string Key, string Title, string ShortDescription, string FullDescription, string Icon);
+    public record ContactInfo(string Type, string Value);
+}
+
+<style>
+    .help-section {
+        border-radius: 22px;
+    }
+
+    .help-card {
+        border-radius: 16px;
+        transition: 0.3s ease;
+        border: 1px solid #e0e0e0;
+    }
+
+        .help-card:hover {
+            transform: translateY(-4px);
+        }
+
+    .active-card {
+        border: 1px solid #1976d2;
+    }
+
+    .detail-section {
+        border-radius: 20px;
+    }
+
+    .contact-section {
+        border-radius: 24px;
+    }
+
+    .contact-table-wrapper {
+        border-radius: 16px;
+    }
+
+    .contact-table {
+        width: 100%;
+    }
+
+        .contact-table .mud-table-cell {
+            padding: 12px 16px;
+        }
+
+    iframe {
+        border-radius: 20px;
+        box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+    }
+</style>

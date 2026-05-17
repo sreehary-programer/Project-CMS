@@ -1,0 +1,147 @@
+﻿@using BCA007.Shared.DTOs.Library
+@using BCA007.Shared.Service.Bus
+
+@inject ISnackbar _snackbar
+@inject IBusService _serv
+
+<MudDialog>
+    <DialogContent>
+
+        <MudForm @ref="_form" Model="Model">
+            <MudGrid Spacing="3">
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="Model.Bus_Name"
+                                  Label="Bus Name"
+                                  Required="true" 
+                                  Disabled="@(Action == "Delete")"/>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudNumericField @bind-Value="Model.Capacity"
+                                     Label="Capacity"
+                                     Required="true" 
+                                     Disabled="@(Action == "Delete")"/>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSelect T="int?" Label="Driver" @bind-Value="Model.Driver_Id" AnchorOrigin="Origin.BottomCenter" Disabled="@(Action == "Delete")">
+                        @foreach (var driver in Drivers)
+                        {
+                            <MudSelectItem T="int?" Value="@driver.Id">@driver.FullName</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="Model.Emergency_Number"
+                                  Label="Emergency Number"
+                                  Disabled="@(Action == "Delete")" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudDatePicker @bind-Date="Model.Insurance_Expiry_Date" Label="Insurance Expiry" Disabled="@(Action == "Delete")" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudDatePicker @bind-Date="Model.Road_Permit_Expiry_Date" Label="Road Permit Expiry" Disabled="@(Action == "Delete")" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudDatePicker @bind-Date="Model.Next_Service_Date" Label="Next Service Date" Disabled="@(Action == "Delete")" />
+                </MudItem>
+            </MudGrid>
+
+        </MudForm>
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <MudAlert Severity="Severity.Error" Dense Class="mt-2">
+                @_error
+            </MudAlert>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Color="@(Action == "Delete" ? Color.Error : Color.Success)"
+                   Disabled="_loading"
+                   OnClick="SaveAsync">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate Size="Size.Small" />
+            }
+            else
+            {
+                @(Action == "Edit" ? "Update" : Action)
+
+            }
+        </MudButton>
+        <MudButton OnClick="Cancel">
+            Cancel
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [Parameter]
+    public BusDto Model { get; set; } = new();
+    [Parameter]
+    public string Action { get; set; } = "Create";
+    [CascadingParameter]
+    private IMudDialogInstance _MudDialog { get; set; } = default!;
+
+    private MudForm _form = default!;
+    private bool _loading;
+    private string? _error;
+    private List<DriverViewDto> Drivers = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Drivers = await _serv.GetDriversAsync();
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add($"Failed to load drivers: {ex.Message}", Severity.Error);
+        }
+    }
+
+
+    private async Task SaveAsync()
+    {
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+        _loading = true;
+        try
+        {
+            if ((Model.Id == 0) || (Action == "Create"))
+            {
+                await _serv.CreateAsync(Model);
+                _snackbar.Add("Bus created successfully", Severity.Success);
+            }
+            else if (Action == "Delete")
+            {
+                await _serv.DeleteAsync(Model.Id);
+                _snackbar.Add("Bus deleted successfully", Severity.Success);
+            }
+            else
+            {
+                await _serv.UpdateAsync(Model);
+                _snackbar.Add("Bus updated successfully", Severity.Success);
+            }
+
+            _MudDialog.Close(DialogResult.Ok(Model));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add($"Failed to save Bus: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+    }
+    private void Cancel()
+    {
+        _MudDialog.Close(DialogResult.Cancel());
+    }
+}

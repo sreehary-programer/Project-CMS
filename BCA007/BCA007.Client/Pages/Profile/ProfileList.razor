@@ -1,0 +1,426 @@
+﻿@page "/Profile/Profilelist"
+@using BCA007.Shared.Service.Student
+@inject IStudentProfileService _serv
+
+
+<MudContainer MaxWidth="MaxWidth.Large">
+
+    <MudText Typo="Typo.h5" Class="mb-4">
+        Student Profiles
+    </MudText>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate />
+    }
+    else
+    {
+        @foreach (var student in _list)
+        {
+            <!-- STUDENT CARD -->
+            <MudPaper Elevation="2" Class="pa-4 mb-4">
+
+                <MudGrid Spacing="3">
+
+                    <!-- PERSONAL DETAILS -->
+                    <MudItem xs="12" md="4">
+                        <MudPaper Elevation="5" Class="pa-4 text-center">
+
+                            <div class="d-flex justify-center">
+                                <MudAvatar Style="width:170px; height:170px;">
+                                    <MudImage Src="@(student.ProfileURL ?? "/images/defaultuser.png")"
+                                              ObjectFit="ObjectFit.Cover" />
+                                </MudAvatar>
+                            </div>
+
+
+
+                            <MudText Typo="Typo.h6">
+                                @student.FullName
+                            </MudText>
+
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @student.Email
+                            </MudText>
+
+                            <MudText Typo="Typo.body2">
+                                📞 @student.PhoneNumber
+                            </MudText>
+
+
+
+                        </MudPaper>
+                    </MudItem>
+
+                    <!-- Personal DETAILS -->
+                    <MudItem xs="12" md="8">
+                        <MudPaper Elevation="5" Class="pa-4">
+
+                            <MudText Typo="Typo.h6" Class="mb-2">
+                                Personal Information
+                            </MudText>
+
+                            <MudDivider Class="mb-2" />
+
+                            <MudGrid>
+                                <MudItem xs="6"><b>User Name</b></MudItem>
+                                <MudItem xs="6">@student.FullName</MudItem>
+
+                                <MudItem xs="6"><b>Date Of Birth</b></MudItem>
+                                <MudItem xs="6">@student.DateOfBirth</MudItem>
+
+                                <MudItem xs="6"><b>Parent Name</b></MudItem>
+                                <MudItem xs="6">@student.Parent_Name</MudItem>
+
+                                <MudItem xs="6"><b>Gender</b></MudItem>
+                                <MudItem xs="6">@student.Gender_Name</MudItem>
+                            </MudGrid>
+
+                        </MudPaper>
+                    </MudItem>
+                    <!-- ACADEMIC DETAILS -->
+                    <MudItem xs="12" md="12">
+
+                        <MudPaper Elevation="5" Class="pa-4 text-center">
+
+                            <MudText Typo="Typo.h6" Class="mb-2">
+                                ACADEMIC INFORMATION
+                            </MudText>
+
+                            <MudDivider Class="mb-2" />
+
+                            <MudGrid>
+
+                                <MudItem xs="6"><b>Division Name</b></MudItem>
+                                <MudItem xs="6">@student.Division_Name</MudItem>
+
+                                <MudItem xs="6"><b>Semester Name</b></MudItem>
+                                <MudItem xs="6">@student.Semester_Name</MudItem>
+
+                                <MudItem xs="6"><b>Course Code</b></MudItem>
+                                <MudItem xs="6">@student.Course_Code</MudItem>
+
+                                <MudItem xs="6"><b>Course Name</b></MudItem>
+                                <MudItem xs="6">@student.Course_Name</MudItem>
+
+                                <MudItem xs="6"><b>Batch Name</b></MudItem>
+                                <MudItem xs="6">@student.Batch_Name</MudItem>
+
+                                <MudItem xs="6"><b>Duration</b></MudItem>
+                                <MudItem xs="6">@student.Duration</MudItem>
+
+                            </MudGrid>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+
+            </MudPaper>
+        }
+
+        //timetable
+
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" Class="mb-2">
+                TimeTable
+            </MudText>
+            @foreach (var timetable in _timetable)
+            {
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" md="12">
+
+                        <MudPaper Elevation="5" Class="pa-4 text-center">
+                            <MudDivider Class="mb-2" />
+                            <MudGrid>
+
+                                <MudItem xs="12" md="6"><b>Date</b></MudItem>
+                                <MudItem xs="12" md="6">@timetable.Date.Value.ToString("ddd dd MMM yyyy")</MudItem>
+
+                                <MudItem xs="12" md="6"><b>Period Name</b></MudItem>
+                                <MudItem xs="12" md="6">@timetable.Period_Name</MudItem>
+
+                                <MudItem xs="12" md="6"><b>Subect Name</b></MudItem>
+                                <MudItem xs="12" md="6">@timetable.Subject_Name</MudItem>
+
+                                <MudItem xs="12" md="6"><b>Staff Name</b></MudItem>
+                                <MudItem xs="12" md="6">@timetable.Staff_Name</MudItem>
+
+                            </MudGrid>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            }
+        </MudPaper>
+
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" Class="mb-2">
+                Attendance
+            </MudText>
+            <MudGrid Spacing="3">
+                <MudItem xs="12" md="12">
+                    <MudPaper Elevation="5" Class="pa-4 text-center">
+                        <MudDivider Class="mb-2" />
+                        <MudTable Items="@_att" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
+                            <HeaderContent>
+                                <MudTh>Date</MudTh>
+                                <MudTh>Period 1</MudTh>
+                                <MudTh>Period 2</MudTh>
+                                <MudTh>Period 3</MudTh>
+                                <MudTh>Period 4</MudTh>
+                                <MudTh>Period 5</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                @{
+                                    string? dt = Convert.ToDateTime(context.Date).ToShortDateString();
+                                }
+                                <MudTd DataLabel="Date">@dt</MudTd>
+                                <MudTd DataLabel="Period 1">@context.Att_1</MudTd>
+                                <MudTd DataLabel="Period 2">@context.Att_2</MudTd>
+                                <MudTd DataLabel="Period 3">@context.Att_3</MudTd>
+                                <MudTd DataLabel="Period 4">@context.Att_4</MudTd>
+                                <MudTd DataLabel="Period 5">@context.Att_5</MudTd>
+
+
+                            </RowTemplate>
+                        </MudTable>
+                    </MudPaper>
+
+                </MudItem>
+            </MudGrid>
+
+            @foreach (var persentage in _per)
+            {
+                <MudPaper Elevation="5" Class="pa-4 text-center">
+                    <MudDivider Class="mb-2" />
+                    <MudGrid>
+
+                        <MudItem xs="12" md="6"><b>Percentage</b></MudItem>
+                        <MudItem xs="12" md="6">@persentage.AttendancePercentage%</MudItem>
+                    </MudGrid>
+                </MudPaper>
+            }
+        </MudPaper>
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" Class="mb-2">
+                Student Fee
+            </MudText>
+
+            <MudGrid Spacing="3">
+                <MudItem xs="12" md="12">
+                    <MudPaper Elevation="5" Class="pa-4 text-center">
+                        <MudDivider Class="mb-2" />
+                        <MudTable Items="@_fee" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
+                            <HeaderContent>
+                                <MudTh>Fee Type</MudTh>
+                                <MudTh>Total Amount</MudTh>
+                                <MudTh>Status</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Fee Type">@context.Fee_Type_Name</MudTd>
+                                <MudTd DataLabel="Total Amount">@context.TotalAmount</MudTd>
+                                <MudTd DataLabel="Status">@context.Status</MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </MudPaper>
+
+                </MudItem>
+            </MudGrid>
+
+
+        </MudPaper>
+
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" Class="mb-2">
+                Bus Info
+            </MudText>
+            @foreach (var buss in _bus)
+            {
+                <MudGrid Spacing="3">
+
+
+                    <MudItem xs="12" md="12">
+
+                        <MudPaper Elevation="5" Class="pa-4 text-center">
+
+
+
+                            <MudDivider Class="mb-2" />
+
+                            <MudGrid>
+
+                                <MudItem xs="12" md="6"><b>Bus Name</b></MudItem>
+                                <MudItem xs="12" md="6">@buss.Bus_Name</MudItem>
+
+
+                                <MudItem xs="12" md="6"><b>Route Name</b></MudItem>
+                                <MudItem xs="12" md="6">@buss.Route_Name</MudItem>
+
+                                <MudItem xs="12" md="6"><b>Route Price</b></MudItem>
+                                <MudItem xs="12" md="6">@buss.Route_Price</MudItem>
+
+                            </MudGrid>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            }
+        </MudPaper>
+
+
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" Class="mb-2">
+                Book History
+            </MudText>
+
+            <MudGrid Spacing="3">
+                <MudItem xs="12" md="12">
+                    <MudDivider Class="mb-2" />
+                    <MudTable Items="@_book" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
+                        <HeaderContent>
+                            <MudTh>Issue Date</MudTh>
+                            <MudTh>Book Name</MudTh>
+                            <MudTh>Return Date</MudTh>
+                            <MudTh>Fine</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            @{
+                                string? dt = Convert.ToDateTime(context.Issue_Date).ToShortDateString();
+                            }
+                            <MudTd DataLabel="Date">@dt</MudTd>
+                            <MudTd DataLabel="Exam Type">@context.Title</MudTd>
+                            @{
+                                string? dtl = Convert.ToDateTime(context.Return_Date).ToShortDateString();
+                            }
+                            <MudTd DataLabel="Date">@dtl</MudTd>
+                            <MudTd DataLabel="Subject Name">@context.Fine</MudTd>
+                            @* <MudTd DataLabel="Max Mark">@context.Max_Mark</MudTd>
+                            <MudTd DataLabel="Obtained Mark">@context.Obtained_Mark</MudTd> *@
+                        </RowTemplate>
+                    </MudTable>
+
+                </MudItem>
+            </MudGrid>
+
+
+        </MudPaper>
+
+        //result
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" Class="mb-2">
+                Exam Result
+            </MudText>
+
+            <MudGrid Spacing="3">
+                <MudItem xs="12" md="12">
+                    <MudDivider Class="mb-2" />
+                    <MudTable Items="@_result" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
+                        <HeaderContent>
+                            <MudTh>Date</MudTh>
+                            <MudTh>Exam Type</MudTh>
+                            <MudTh>Subject Name</MudTh>
+                            <MudTh>Maximum Mark</MudTh>
+                            <MudTh>Obtained Mark</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            @{
+                                string? dt = Convert.ToDateTime(context.Date).ToShortDateString();
+                            }
+                            <MudTd DataLabel="Date">@dt</MudTd>
+                            <MudTd DataLabel="Exam Type">@context.Exam_Type</MudTd>
+                            <MudTd DataLabel="Subject Name">@context.Subject_Name</MudTd>
+                            <MudTd DataLabel="Max Mark">@context.Max_Mark</MudTd>
+                            <MudTd DataLabel="Obtained Mark">@context.Obtained_Mark</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+
+                </MudItem>
+            </MudGrid>
+
+
+        </MudPaper>
+
+        @foreach (var hostel in _hstl)
+        {
+            <MudPaper Elevation="2" Class="pa-4 mb-4">
+
+                <MudGrid Spacing="3">
+
+
+                    <MudItem xs="12" md="12">
+
+                        <MudPaper Elevation="5" Class="pa-4 text-center">
+
+                            <MudText Typo="Typo.h6" Class="mb-2">
+                                HOSTEL INFORMATION
+                            </MudText>
+
+                            <MudDivider Class="mb-2" />
+
+                            <MudGrid>
+
+
+                                @*<MudItem xs="6"><b>User Name</b></MudItem>
+                                <MudItem xs="6">@hostel.UserName</MudItem> *@
+
+                                <MudItem xs="6"><b>Hostel Name</b></MudItem>
+                                <MudItem xs="6">@hostel.Hostel_Name</MudItem>
+
+                                <MudItem xs="6"><b>Room Number</b></MudItem>
+                                <MudItem xs="6">@hostel.Room_Number</MudItem>
+
+                                <MudItem xs="6"><b>Warden Name</b></MudItem>
+                                <MudItem xs="6">@hostel.Warden_Name</MudItem>
+
+                                <MudItem xs="6"><b>Hostel Name</b></MudItem>
+                                <MudItem xs="6">@hostel.Hostel_FullName</MudItem>
+                                @*<MudItem xs="6"><b>Warden Name</b></MudItem>
+                            <MudItem xs="6">@hostel.Warden_Name</MudItem> *@
+
+                            </MudGrid>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+
+            </MudPaper>
+
+        }
+
+
+    }
+
+</MudContainer>
+
+@code {
+    private List<StudentViewProfileDto> _list = new();
+    private List<HostelViewDto> _hstl = new();
+    private List<TimetablesViewDto> _timetable = new();
+    private List<BusViewDto> _bus = new();
+    private List<BookHistoryViewDto> _book = new();
+    private List<AttendanceViewDto> _att = new();
+    private List<ResultsViewDto> _result = new();
+    private List<AttendancePersentageViewDto> _per = new();
+    private List<FeeDto> _fee = new();
+
+
+    private bool _loading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        _list = await _serv.GetAllAsync() ?? new();
+        var stdId = _list.FirstOrDefault().Id;
+        if (stdId == null)
+        {
+            stdId = 0;
+        }
+
+        _hstl = await _serv.GetAllHostelAsync(stdId) ?? new();
+
+        _timetable = await _serv.GetAllTimetableAsync(stdId) ?? new();
+        _bus = await _serv.GetAllBusAsync(stdId) ?? new();
+        _book = await _serv.GetAllBookHistoryAsync(stdId) ?? new();
+        _att = await _serv.GetAllAttendanceAsync(stdId) ?? new();
+        _per = await _serv.GetAllPersentageAsync(stdId) ?? new();
+        _result = await _serv.GetAllResultAsync(stdId) ?? new();
+        _fee = await _serv.GetAllFeeAsync(stdId) ?? new();
+        _loading = false;
+    }
+}

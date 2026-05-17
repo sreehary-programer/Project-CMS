@@ -1,0 +1,173 @@
+﻿@* @implements IDisposable
+ *@
+ @inject NavigationManager NavigationManager
+<MudNavMenu Dense="true" Color="Color.Info">
+	<MudNavLink Href="/" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
+	<AuthorizeView Roles="Admin,Principal">
+		<Authorized>
+			<MudNavGroup Title="Course" Expanded="false" Icon="@Icons.Material.Filled.Build">
+				<MudNavLink Href="/Course/classlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.PeopleOutline">Class</MudNavLink>
+				<MudNavLink Href="/Course/courselist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Group">Course</MudNavLink>
+				<MudNavLink Href="/Course/batchlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.BatchPrediction">Batch</MudNavLink>
+				<MudNavLink Href="/Course/semesterlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Group">Semester</MudNavLink>
+				<MudNavLink Href="/Course/divisionlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Segment">Division</MudNavLink>
+			</MudNavGroup>
+		</Authorized>
+	</AuthorizeView>
+	<AuthorizeView>
+		<Authorized>
+			<MudNavGroup Title="Library" Expanded="false" Icon="@Icons.Material.Filled.Book">
+				<MudNavLink Href="/Library/bookslist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Book">Books</MudNavLink>
+				<AuthorizeView Roles="Admin,Librarian,Principal" Context="cont2">
+					<Authorized>
+
+						<MudNavLink Href="/Library/bookpublisherlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Publish">Publishers</MudNavLink>
+						<MudNavLink Href="/Library/bookcategorylist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Category">Category</MudNavLink>
+						<MudNavLink Href="/Library/booktypelist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.TypeSpecimen">Type</MudNavLink>
+						<MudNavLink Href="/library/bookIssueHistorylist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.History">History</MudNavLink>
+
+						<MudNavLink Href="/Library/bookRequestlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.RequestQuote">Book Request</MudNavLink>
+					</Authorized>
+				</AuthorizeView>
+
+			</MudNavGroup>
+		</Authorized>
+	</AuthorizeView>
+	<AuthorizeView>
+		<Authorized>
+		</Authorized>
+	</AuthorizeView>
+	<AuthorizeView Roles="Admin,Principal">
+		<Authorized>
+			<MudNavGroup Title="Users" Expanded="false" Icon="@Icons.Material.Filled.PeopleOutline">
+				<MudNavLink Href="/student/studentlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.People">Student</MudNavLink>
+				<MudNavLink Href="/users/stafflist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.People">Staff</MudNavLink>
+				<MudNavLink Href="/users/parentlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.People">Parent</MudNavLink>
+				<MudNavLink Href="/users/adminlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.People">Admin</MudNavLink>
+			</MudNavGroup>
+		</Authorized>
+	</AuthorizeView>
+	<AuthorizeView Roles="Admin,Principal,Teacher">
+		<Authorized>
+			<MudNavGroup Title="Academic" Expanded="false" Icon="@Icons.Material.Filled.School">
+				<MudNavLink Href="/ams/activitylist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.EventNote">Activity</MudNavLink>
+				<MudNavLink Href="/ams/activitieslist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Assignment">Activities</MudNavLink>
+				<MudNavLink Href="/timetable/timetablelist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Schedule">Timetable</MudNavLink>
+				<MudNavLink Href="/subject/subjectlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.MenuBook">Subject</MudNavLink>
+				<MudNavLink Href="/ams/examlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Assessment">Exam</MudNavLink>
+				<MudNavLink Href="/ams/resultlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Score">Result</MudNavLink>
+				<MudNavLink Href="/attendance/periodlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.DateRange">Period</MudNavLink>
+				<MudNavLink Href="/attendance/attendformlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Timer">Attendance Form</MudNavLink>
+				<MudNavLink Href="/attendance/attendentrylist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Timer">Attendance Entry Form</MudNavLink>
+
+			</MudNavGroup>
+		</Authorized>
+	</AuthorizeView>
+	@* SMS *@
+	<AuthorizeView Roles="Student,Parent">
+		<MudNavGroup Title="Profile" Expanded="false" Icon="@Icons.Material.Filled.PeopleOutline">
+
+			<MudNavLink Href="/profile/profilelist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.People">profile</MudNavLink>
+
+		</MudNavGroup>
+	</AuthorizeView>   @*
+    <AuthorizeView Roles="Admin">
+        <MudNavGroup Title="StaffProfile" Expanded="false" Icon="@Icons.Material.Filled.PeopleOutline">
+            <MudNavLink Href="/profile/staffprofilelist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.People">Staffprofile</MudNavLink>
+        </MudNavGroup>
+    </AuthorizeView>
+    @* AAMS *@
+	<AuthorizeView Roles="Admin,Principal,Teacher">
+		<Authorized>
+
+			<MudNavGroup Title="Bus" Expanded="false" Icon="@Icons.Material.Filled.LocationOn">
+				<MudNavLink Href="/bus/buslist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Commute">BusList</MudNavLink>
+				<MudNavLink Href="/bus/routelist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.AltRoute">RouteList</MudNavLink>
+			</MudNavGroup>
+		</Authorized>
+	</AuthorizeView>
+	<AuthorizeView Roles="Admin,Principal,Accountant">
+		<Authorized>
+			<MudNavGroup Title="Finance" Expanded="false" Icon="@Icons.Material.Filled.AttachMoney">
+				<MudNavLink Href="/staff-payments" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Money">Staff Payments</MudNavLink>
+				<MudNavLink Href="/student-fees" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.School">Student Fees</MudNavLink>
+			</MudNavGroup>
+		</Authorized>
+	</AuthorizeView>
+	<AuthorizeView Roles="Admin,Principal">
+		<Authorized>
+			<MudNavGroup Title="Hostel" Expanded="false" Icon="@Icons.Material.Filled.Build">
+				@*  <MudNavLink Href="/hostal/hostallist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Segment">Hostal</MudNavLink>
+                <MudNavLink Href="/Hostal/hostalroomlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Segment">Hostal Room</MudNavLink>*@
+				<MudNavLink Href="/Hostal/hostaltlist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Segment">Hostel Student List</MudNavLink>
+
+
+			</MudNavGroup>
+		</Authorized>
+	</AuthorizeView>
+
+	@*  <MudNavGroup Title="Default" Expanded="false" Icon="@Icons.Material.Filled.PeopleAlt">
+        <MudNavLink Href="/about">About</MudNavLink>
+        <MudNavLink Href="counter" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Add">Counter</MudNavLink>
+        <MudNavLink Href="weather" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.List">Weather</MudNavLink>
+    </MudNavGroup> *@
+	<MudNavGroup Title="Settings" Expanded="false" Icon="@Icons.Material.Filled.Settings">
+		<AuthorizeView>
+			<Authorized>
+				<MudNavLink Href="Account/Manage?ReturnUrl=/" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Person">@context.User.Identity?.Name</MudNavLink>
+				@* <form action="Account/Logout" method="post">
+                    <AntiforgeryToken />
+                     <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+ @*                 <button type="submit" class="mud-nav-link mud-ripple" @onclick="Logout">
+ *@ 
+@*                     <input type="hidden" name="ReturnUrl" value="/" />
+ *@
+				@* <button type="submit" class="mud-nav-link mud-ripple">
+                        <MudIcon Icon="@Icons.Material.Filled.Logout" Color="Color.Info" Class="mr-3"></MudIcon> Logout
+                    </button>
+                </form> *@ 
+                <MudMenuItem OnClick="@(() => NavigationManager.NavigateTo("/logout", true))">Logout</MudMenuItem>
+			</Authorized>
+			<NotAuthorized>
+				@* <MudNavLink Href="Account/Register" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Person">Register</MudNavLink> *@
+				<MudNavLink Href="Account/Login" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Password">Login</MudNavLink>
+			</NotAuthorized>
+		</AuthorizeView>
+	</MudNavGroup>
+	<MudNavLink Href="help/helplist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Person">Help</MudNavLink>
+
+
+</MudNavMenu>
+
+@code {
+	// private string? currentUrl;
+
+	// private async Task Logout()
+	// {
+	//     //NavigationManager.NavigateTo("/api/logout", true);
+
+	//     //NavigationManager.NavigateTo("/Account/Logout", true); // force reload
+	//     NavigationManager.NavigateTo("/Account/logout", true);
+	// }
+
+	// protected override void OnInitialized()
+	// {
+	// 	currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+
+
+	// 	NavigationManager.LocationChanged += OnLocationChanged;
+	// }
+
+	// private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+	// {
+	// 	currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+	// 	StateHasChanged();
+	// }
+
+	// public void Dispose()
+	// {
+	// 	NavigationManager.LocationChanged -= OnLocationChanged;
+	// }
+
+}
+

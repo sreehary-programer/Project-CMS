@@ -1,0 +1,165 @@
+﻿@page "/bus/buslist"
+@using BCA007.Shared.DTOs.Library
+@using BCA007.Shared.Service.Bus
+@inject ISnackbar _snackbar
+@inject IBusService _serv
+@inject IDialogService _dialog
+@inject NavigationManager _nav
+
+<MudChipSet T="string" Class="d-flex justify-content-start mb-3">
+    <MudChip Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => _nav.NavigateTo("/bus/buslist"))">Bus List</MudChip>
+    <MudChip Color="Color.Primary" Variant="Variant.Outlined" OnClick="@(() => _nav.NavigateTo("/bus/routelist"))">Bus Routes</MudChip>
+</MudChipSet>
+<MudPaper Class="pa-0 mt-6">
+    <MudDataGrid Dense Hover Items="_list" Loading="_loading"
+                 QuickFilter="QuickFilter"
+                 SortMode="SortMode.Multiple"
+                 @ref="_grid">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Bus List</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            <MudButtonGroup Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="CreateDetails">
+                    Add
+                </MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.Refresh"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Refresh
+                </MudButton>
+            </MudButtonGroup>
+        </ToolBarContent>
+
+        <Columns>
+
+            <PropertyColumn Property="x => x.Bus_Name" Title="Bus Name" />
+            <PropertyColumn Property="x => x.Capacity" Title="Capacity" />
+            <PropertyColumn Property="x => x.Driver_Name" Title="Driver" />
+            <PropertyColumn Property="x => x.Emergency_Number" Title="Emergency No" />
+            <PropertyColumn Property="x => x.Insurance_Expiry_Date" Title="Insurance Exp" Format="d" />
+            <PropertyColumn Property="x => x.Road_Permit_Expiry_Date" Title="Permit Exp" Format="d" />
+            <PropertyColumn Property="x => x.Next_Service_Date" Title="Next Service" Format="d" />
+            
+            <TemplateColumn Title="Actions">
+                <CellTemplate Context="row">
+                    <div class="d-flex align-center" style="gap:4px; white-space:nowrap;">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Color="Color.Primary" Size="Size.Small"
+                                       OnClick="@(() => EditDetails(row.Item))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error" Size="Size.Small"
+                                       OnClick="@(() => DeleteDetails(row.Item))" />
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
+        </PagerContent>
+    </MudDataGrid>
+
+</MudPaper>
+
+@code {
+    private MudDataGrid<BusViewsDto> _grid = default!;
+    private List<BusViewsDto> _list = new();
+    private string _searchString = string.Empty;
+    private bool _loading;
+    protected override async Task OnInitializedAsync()
+    {
+        await OnRefresh();
+    }
+    private bool QuickFilter(BusViewsDto x)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        return x.Bus_Name?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false;
+    }
+
+    private async Task OnRefresh()
+    {
+        try
+        {
+            _loading = true;
+            _list = await _serv.GetAllAsync();
+            if (_grid != null)
+            {
+                 await _grid.ReloadServerData();
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Success);
+        }
+        finally
+        {
+            _loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task CreateDetails()
+    {
+        await OpenDetailsDialog(new BusDto(), "Create");
+    }
+
+    private async Task EditDetails(BusViewsDto dto)
+    {
+        await OpenDetailsDialog(new BusDto
+        {
+            Id = dto.Bus_id ?? dto.Id,
+            Bus_Name = dto.Bus_Name,
+            Capacity = dto.Capacity,
+            Route_Id = dto.Route_Id?.ToString(),
+            Start_Date = dto.Start_Date,
+            End_Date = dto.End_date
+        }, "Edit");
+    }
+    private async Task DeleteDetails(BusViewsDto dto)
+    {
+        await OpenDetailsDialog(new BusDto
+        {
+            Id = dto.Bus_id ?? dto.Id,
+            Bus_Name = dto.Bus_Name,
+            Capacity = dto.Capacity,
+            Route_Id = dto.Route_Id?.ToString(),
+            Start_Date = dto.Start_Date,
+            End_Date = dto.End_date
+        }, "Delete");
+    }
+    private async Task OpenDetailsDialog(BusDto model, string action)
+    {
+        _loading = true;
+        var parameters = new DialogParameters
+        {
+            ["Model"] = model,
+            ["Action"] = action
+        };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false
+        };
+
+        var dialog = await _dialog.ShowAsync<BusEdit>(
+           $"{action} Bus",
+            parameters, options);
+
+        var result = await dialog.Result;
+        _loading = false;
+
+        if (result == null || result.Canceled || result.Data == null)
+            return;
+
+        await OnRefresh();
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="BCA007.Shared/BCA007.Shared.csproj" />
+  <Project Path="BCA007/BCA007.Client/BCA007.Client.csproj" />
+  <Project Path="BCA007/BCA007/BCA007.csproj" />
+</Solution>

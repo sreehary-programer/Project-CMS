@@ -1,0 +1,134 @@
+﻿@using BCA007.Shared.Service.Core
+@using BCA007.Shared.Service.Hostal
+@inject ISnackbar _snackbar
+ @inject IHostaltService _serv
+@inject ILookupService _lookup 
+<MudDialog>
+    <DialogContent>
+        @* <EditForm>
+            <DataAnnotationsValidator />*@
+        <MudForm @ref="_form" Model="Model">
+
+            <MudTextField Label="Room Number"
+                          For="@(() => Model.Room_Number)"
+                          @bind-Value="Model.Room_Number" />
+
+            <MudTextField Label="Capacity"
+                          For="@(() => Model.Capacity)"
+                          @bind-Value="Model.Capacity" />
+			<MudSelect T="int?" @bind-Value="Model.Hostel_Id" Required="true" Label="Select Hostel Name" Variant="Variant.Outlined" Placeholder="Please Select Hostal Name" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.AddModerator" AdornmentColor="Color.Primary">
+				@foreach (var _option in _hstRom)
+				{
+					<MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+				}
+			</MudSelect>
+        </MudForm> 
+      
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <MudAlert Severity="Severity.Error" Dense Class="mt-2">
+                @_error
+            </MudAlert>
+        }
+        @* </EditForm> *@
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Color="@(Action == "Delete" ? Color.Error : Color.Success)"
+                   Disabled="_loading"
+                   OnClick="SaveAsync">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate Size="Size.Small" />
+            }
+            else
+            {
+                @(Action == "Edit" ? "Update" : Action)
+
+            }
+        </MudButton>
+        <MudButton OnClick="Cancel">
+            Cancel
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    // [Parameter]
+    // public StudentDto Model { get; set; } = new();
+    [Parameter]
+    public string Action { get; set; } = "Create";
+
+    [CascadingParameter]
+    private IMudDialogInstance _MudDialog { get; set; } = default!;
+    [Parameter]
+    public HostalRoomDto Model { get; set; } = new();
+
+    private MudForm _form = default!;
+    private bool _loading;
+    private string? _error;
+
+    private List<LookupItemDto> _hstRom = new();
+    
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hstRom = await _lookup.GetHostalRoomAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _loading = true;
+
+        try
+        {
+            if (Action == "Create")
+            {
+                var created = await _serv.CreateAsync(Model);
+                Model.Id = created.Id;
+                _snackbar.Add("Hostal Room created successfully", Severity.Success);
+            }
+            else if (Action == "Delete")
+            {
+                await _serv.DeleteAsync(Model.Id);
+                _snackbar.Add("Hostal Room deleted successfully", Severity.Success);
+            }
+            else
+            {
+                await _serv.UpdateAsync(Model);
+                _snackbar.Add("Hostal Room updated successfully", Severity.Success);
+            }
+
+            _MudDialog.Close(DialogResult.Ok(Model));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add(ex.Message, Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            _error = "Unexpected error occurred.";
+            _snackbar.Add("Failed to save Hostal Room", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        _MudDialog.Close(DialogResult.Cancel());
+    }
+}

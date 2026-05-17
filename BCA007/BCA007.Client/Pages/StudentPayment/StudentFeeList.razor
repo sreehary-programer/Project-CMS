@@ -1,0 +1,484 @@
+@page "/student-fees"
+@using BCA007.Shared.DTOs
+@using BCA007.Client.Pages.StudentPayment
+@using BCA007.Shared.Service.Student
+@inject IStudentPaymentService StudentPaymentService
+@inject IStudentService StudentService
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" GutterBottom="true">Student Fees & Payments</MudText>
+
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+        <MudTabPanel Text="Student Fees">
+            <MudTable T="StudentFeeViewDto" Items="@fees" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loadingFees" LoadingProgressColor="Color.Info" Filter="new Func<StudentFeeViewDto,bool>(FilterFees)">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Assigned Fees</MudText>
+                    <MudSpacer />
+                    <MudGrid Spacing="2" Class="align-center d-flex justify-end" Style="flex-grow: 1; max-width: 800px;">
+                        <MudItem xs="12" sm="4" md="3">
+                            <MudSelect T="int?" Label="Fee Type" @bind-Value="selectedFeeTypeId" Clearable="true" AdornmentIcon="@Icons.Material.Filled.FilterList" Variant="Variant.Outlined" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter">
+                                @foreach (var type in feeTypes)
+                                {
+                                    <MudSelectItem Value="@((int?)type.Id)">@type.Fee_Type_Name</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" sm="4" md="3">
+                            <MudDatePicker Label="Due Date" @bind-Date="selectedDate" Clearable="true" Variant="Variant.Outlined" PickerVariant="PickerVariant.Dialog" Margin="Margin.Dense" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4" md="4">
+                              <MudTextField @bind-Value="feeSearchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true"></MudTextField>
+                        </MudItem>
+                        <MudItem xs="12" sm="12" md="2" Class="d-flex justify-end">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="AddFee">Add Fee</MudButton>
+                        </MudItem>
+                    </MudGrid>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Student</MudTh>
+                    <MudTh>Fee Type</MudTh>
+                    <MudTh>Amount</MudTh>
+                    <MudTh>Due Date</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Student">@context.FullName</MudTd>
+                    <MudTd DataLabel="Fee Type">@context.Fee_Type_Name</MudTd>
+                    <MudTd DataLabel="Amount">@context.Amount.ToString("C")</MudTd>
+                    <MudTd DataLabel="Due Date">@context.Due_Date.ToShortDateString()</MudTd>
+                    <MudTd DataLabel="Status">
+                         <MudSelect @bind-Value="context.Status_Id" Variant="Variant.Outlined" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter">
+                            @foreach (var status in statuses)
+                            {
+                                <MudSelectItem Value="@status.Id">@status.Status</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" Size="Size.Small" OnClick="@(() => UpdateFeeStatus(context))" Title="Save Status" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => EditFee(context.Id))" />
+                    </MudTd>
+                </RowTemplate>
+                 <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        </MudTabPanel>
+        
+        <MudTabPanel Text="Payment History">
+            <MudTable T="StudentPaymentViewDto" Items="@payments" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loadingPayments" LoadingProgressColor="Color.Info" Filter="new Func<StudentPaymentViewDto,bool>(FilterPayments)">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Payment History</MudText>
+                    <MudSpacer />
+                    <div class="d-flex align-center gap-2">
+                        <MudDatePicker Label="Date" @bind-Date="_paymentDateFilter" Clearable="true" Margin="Margin.Dense" Variant="Variant.Outlined" PickerVariant="PickerVariant.Dialog" Class="ma-1" Style="width: 160px;" />
+                        <MudSelect T="int?" Label="Payment Method" @bind-Value="_paymentMethodFilter" Clearable="true" Margin="Margin.Dense" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter" Class="ma-1" Style="width: 160px;">
+                            <MudSelectItem Value="@((int?)2002)">Cash</MudSelectItem>
+                            <MudSelectItem Value="@((int?)2006)">Cheque</MudSelectItem>
+                            <MudSelectItem Value="@((int?)2007)">Bank Transfer</MudSelectItem>
+                            <MudSelectItem Value="@((int?)2008)">UPI</MudSelectItem>
+                            <MudSelectItem Value="@((int?)2003)">Online</MudSelectItem>
+                        </MudSelect>
+                        <MudTextField @bind-Value="paymentSearchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" Margin="Margin.Dense" Variant="Variant.Outlined"></MudTextField>
+                    </div>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Receipt #</MudTh>
+                    <MudTh>Student</MudTh>
+                    <MudTh>Amount Paid</MudTh>
+                    <MudTh>Date</MudTh>
+                    <MudTh>Payment Method</MudTh>
+                     <MudTh>Fee Description</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Receipt #">@context.Receipt_Number</MudTd>
+                    <MudTd DataLabel="Student">@context.FullName</MudTd>
+                    <MudTd DataLabel="Amount Paid">@context.Amount_Paid.ToString("C")</MudTd>
+                    <MudTd DataLabel="Date">@context.Paid_Date.ToShortDateString()</MudTd>
+                    <MudTd DataLabel="Payment Method">@GetPaymentMethodName(context.Payment_Id)</MudTd>
+                     <MudTd DataLabel="Fee Description">@context.Description</MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => EditPayment(context.Id))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeletePayment(context.Id))" />
+                    </MudTd>
+                </RowTemplate>
+                 <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        </MudTabPanel>
+
+
+        <MudTabPanel Text="Unpaid Fees Summary">
+            <MudGrid Class="mb-4 mt-2" Spacing="2">
+                <MudItem xs="12" sm="6" md="4">
+                    <MudAutocomplete T="StudentViewDto" Label="Select Student" @bind-Value="selectedStudent" SearchFunc="@SearchStudents"
+                                     ToStringFunc="@(e => e==null?null : $"{e.FullName} ({e.Class_Name})")"
+                                     Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter" ResetValueOnEmptyText="true"
+                                     CoerceText="true" CoerceValue="true"
+                                     AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Primary" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudSelect T="int?" Label="Fee Type" Value="_unpaidFeeTypeFilter" ValueChanged="@(v => { _unpaidFeeTypeFilter = v; LoadStudentFees(); })" Clearable="true" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter" Margin="Margin.Dense">
+                        @foreach (var type in feeTypes)
+                        {
+                            <MudSelectItem Value="@((int?)type.Id)">@type.Fee_Type_Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudDatePicker Label="Due Date" Date="_unpaidDueDateFilter" DateChanged="@(v => { _unpaidDueDateFilter = v; LoadStudentFees(); })" Clearable="true" Variant="Variant.Outlined" PickerVariant="PickerVariant.Dialog" Margin="Margin.Dense" />
+                </MudItem>
+            </MudGrid>
+
+            @if (selectedStudent != null)
+            {
+                <MudCard Elevation="2" Class="mb-4">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Unpaid Fees for @selectedStudent.FullName</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudTable Items="@unpaidFees" Hover="true" Breakpoint="Breakpoint.Sm">
+                            <HeaderContent>
+                                <MudTh>Fee Type</MudTh>
+                                <MudTh>Amount</MudTh>
+                                <MudTh>Due Date</MudTh>
+                                <MudTh>Status</MudTh>
+                                <MudTh>Description</MudTh>
+                                <MudTh>Actions</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Fee Type">@context.Fee_Type_Name</MudTd>
+                                <MudTd DataLabel="Amount">@context.Amount.ToString("C")</MudTd>
+                                <MudTd DataLabel="Due Date">@context.Due_Date.ToShortDateString()</MudTd>
+                                <MudTd DataLabel="Status">
+                                    <MudChip T="string" Color="@GetStatusColor(context.Status)" Size="Size.Small" Variant="Variant.Text">@context.Status</MudChip>
+                                </MudTd>
+                                <MudTd DataLabel="Description">@context.Description</MudTd>
+                                <MudTd DataLabel="Actions">
+                                    <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" OnClick="@(() => PayFee(context))" StartIcon="@Icons.Material.Filled.Payment">Pay</MudButton>
+                                </MudTd>
+                            </RowTemplate>
+                            <NoRecordsContent>
+                                <MudText>No unpaid fees found for this student.</MudText>
+                            </NoRecordsContent>
+                        </MudTable>
+                    </MudCardContent>
+                    <MudCardActions Class="d-flex justify-end align-center pa-4 gap-4">
+                        <MudText Typo="Typo.h6" Color="Color.Error">Total Unpaid: @TotalUnpaid.ToString("C")</MudText>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="PayAllFees" StartIcon="@Icons.Material.Filled.Payment" Disabled="@(TotalUnpaid <= 0)">Pay All</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            }
+            else
+            {
+                <MudPaper Class="pa-8 d-flex justify-center align-center" Elevation="0" Outlined="true">
+                    <MudText Color="Color.Secondary">Select a student to view their unpaid fees summary.</MudText>
+                </MudPaper>
+            }
+        </MudTabPanel>
+    </MudTabs>
+</MudContainer>
+
+@code {
+    private List<StudentFeeViewDto> fees = new();
+    private List<StudentPaymentViewDto> payments = new();
+    private List<FeeTypeDto> feeTypes = new();
+    private List<StatusDto> statuses = new();
+    
+    // Unpaid Fees Summary Vars
+    private List<StudentViewDto> allStudents = new();
+    private List<StudentFeeViewDto> unpaidFees = new();
+    private StudentViewDto? _selectedStudent;
+    private StudentViewDto? selectedStudent
+    {
+        get => _selectedStudent;
+        set
+        {
+            if (_selectedStudent != value)
+            {
+                _selectedStudent = value;
+                LoadStudentFees();
+            }
+        }
+    }
+    private decimal TotalUnpaid => unpaidFees.Sum(f => f.Amount);
+    private bool _loadingFees = true;
+    private bool _loadingPayments = true;
+    private string feeSearchString = "";
+    private string paymentSearchString = "";
+    private int? selectedFeeTypeId;
+    private DateTime? selectedDate;
+    private DateTime? _paymentDateFilter;
+    private int? _paymentMethodFilter;
+    private int? _unpaidFeeTypeFilter;
+    private DateTime? _unpaidDueDateFilter;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            _loadingFees = true;
+            _loadingPayments = true;
+            
+            // Execute sequentially to avoid DbContext concurrency issues
+            var allStatuses = await StudentPaymentService.GetAllStatusesAsync();
+            // Filter to only include Paid, Unpaid, Partial
+            statuses = allStatuses.Where(s => s.Status == "Paid" || s.Status == "Unpaid" || s.Status == "Partial" || s.Status == "Overdue").ToList();
+            
+            feeTypes = (await StudentPaymentService.GetAllFeeTypesAsync()).ToList();
+            fees = (await StudentPaymentService.GetAllStudentFeesAsync()).ToList();
+            allStudents = await StudentService.GetAllAsync();
+            _loadingFees = false;
+
+            payments = (await StudentPaymentService.GetAllStudentPaymentsAsync()).ToList();
+            _loadingPayments = false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data: {ex}");
+            Snackbar.Add($"Error loading fees: {ex.Message}", Severity.Error);
+            _loadingFees = false;
+            _loadingPayments = false;
+        }
+    }
+
+    private void AddFee()
+    {
+        Navigation.NavigateTo("/student-fees/add");
+    }
+
+    private void EditFee(int id)
+    {
+         Navigation.NavigateTo($"/student-fees/edit/{id}");
+    }
+
+    private void PayFee(StudentFeeViewDto fee)
+    {
+        Navigation.NavigateTo($"/student-fees/pay/{fee.Id}");
+    }
+
+    private async Task UpdateFeeStatus(StudentFeeViewDto fee)
+    {
+        try
+        {
+            var success = await StudentPaymentService.UpdateStudentFeeStatusAsync(fee.Id, fee.Status_Id);
+            if (success)
+            {
+                Snackbar.Add("Status updated", Severity.Success);
+                var statusObj = statuses.FirstOrDefault(s => s.Id == fee.Status_Id);
+                if (statusObj != null) fee.Status = statusObj.Status;
+            }
+            else
+            {
+                Snackbar.Add("Failed to update status", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error updating status: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private bool FilterFees(StudentFeeViewDto element) => FilterFuncFees(element, feeSearchString);
+
+    private bool FilterFuncFees(StudentFeeViewDto element, string searchString)
+    {
+        // 1. Filter by Fee Type
+        if (selectedFeeTypeId.HasValue && element.Fee_Type_Id != selectedFeeTypeId.Value)
+            return false;
+
+        // 2. Filter by Due Date (Exact Match or maybe partial? Exact is safer for now)
+        if (selectedDate.HasValue && element.Due_Date.Date != selectedDate.Value.Date)
+            return false;
+
+        // 3. Filter by Search String (Name or Fee Type Name)
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        
+        if (element.FullName?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        if (element.Fee_Type_Name?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+            
+        return false;
+    }
+
+    private bool FilterPayments(StudentPaymentViewDto element) => FilterFuncPayments(element, paymentSearchString, _paymentDateFilter, _paymentMethodFilter);
+
+    private bool FilterFuncPayments(StudentPaymentViewDto element, string searchString, DateTime? date, int? methodId)
+    {
+        // 1. Date Filter
+        if (date.HasValue && element.Paid_Date.Date != date.Value.Date)
+            return false;
+
+        // 2. Payment Method Filter
+        if (methodId.HasValue && element.Payment_Id != methodId.Value)
+            return false;
+
+        // 3. Search String
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.FullName?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        if (element.Receipt_Number?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        return false;
+    }
+
+    // Unpaid Fees Logic
+    private async Task<IEnumerable<StudentViewDto>> SearchStudents(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(value))
+            return allStudents;
+        
+        return allStudents.Where(x => x.FullName.Contains(value, StringComparison.InvariantCultureIgnoreCase) 
+                                   || x.UserName.Contains(value, StringComparison.InvariantCultureIgnoreCase));
+    }
+
+    private void LoadStudentFees()
+    {
+        if (selectedStudent == null)
+        {
+            unpaidFees.Clear();
+            return;
+        }
+
+        unpaidFees = fees
+            .Where(f => f.Student_Id == selectedStudent.Id && f.Status != "Paid")
+            .Where(f => !_unpaidFeeTypeFilter.HasValue || f.Fee_Type_Id == _unpaidFeeTypeFilter.Value)
+            .Where(f => !_unpaidDueDateFilter.HasValue || f.Due_Date.Date == _unpaidDueDateFilter.Value.Date)
+            .OrderBy(f => f.Due_Date)
+            .ToList();
+    }
+
+    private Color GetStatusColor(string? status)
+    {
+        return status switch
+        {
+            "Unpaid" => Color.Error,
+            "Partial" => Color.Warning,
+            "Pending" => Color.Warning,
+            "Overdue" => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private async Task PayAllFees()
+    {
+        if (selectedStudent == null || !unpaidFees.Any()) return;
+
+        var parameters = new DialogParameters<PayAllDialog> 
+        { 
+            { x => x.StudentName, selectedStudent.FullName }, 
+            { x => x.TotalAmount, TotalUnpaid },
+            { x => x.StudentId, selectedStudent.Id }
+        };
+        var dialog = await DialogService.ShowAsync<PayAllDialog>("Processing Payment", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is PayAllResult paymentData)
+        {
+            try
+            {
+                var paidStatus = statuses.FirstOrDefault(s => s.Status.Equals("Paid", StringComparison.OrdinalIgnoreCase));
+                int paidStatusId = paidStatus?.Id ?? 5; // Default to 5 (Paid) if not found in list
+
+                var paymentDate = paymentData.PaymentDate ?? DateTime.Today;
+                var receiptNumber = paymentData.ReceiptNumber;
+                var paymentModeId = paymentData.PaymentModeId;
+
+                foreach (var fee in unpaidFees)
+                {
+                    var payment = new StudentPaymentDto
+                    {
+                        Student_id = selectedStudent.Id,
+                        Student_Fee_Id = fee.Id,
+                        Amount_Paid = fee.Amount,
+                        Paid_Date = paymentDate,
+                        Payment_Id = paymentModeId,
+                        Receipt_Number = receiptNumber
+                    };
+
+                    await StudentPaymentService.AddStudentPaymentAsync(payment);
+                    
+                    // Update Fee Status using the specific status update method (safer/simpler)
+                    var success = await StudentPaymentService.UpdateStudentFeeStatusAsync(fee.Id, paidStatusId);
+                    if (!success)
+                    {
+                        Console.WriteLine($"Failed to update status for fee {fee.Id}");
+                    }
+                }
+
+                Snackbar.Add("All fees paid successfully!", Severity.Success);
+                LoadStudentFees(); // Refresh filtered list
+                await LoadData(); // Re-fetch all data to ensure sync
+                LoadStudentFees(); // Re-apply filter
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error processing payments: {ex.Message}", Severity.Error);
+                Console.WriteLine($"Error PayAll: {ex}");
+            }
+        }
+    }
+
+    private async Task EditPayment(int id)
+    {
+        var parameters = new DialogParameters<StudentPaymentEditDialog> { { x => x.PaymentId, id } };
+        var dialog = await DialogService.ShowAsync<StudentPaymentEditDialog>("Edit Payment", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task DeletePayment(int id)
+    {
+         bool? result = await DialogService.ShowMessageBox(
+            "Delete Payment", 
+            "Are you sure you want to delete this payment?", 
+            yesText:"Delete", cancelText:"Cancel");
+
+        if (result == true)
+        {
+            try 
+            {
+                await StudentPaymentService.DeleteStudentPaymentAsync(id);
+                Snackbar.Add("Payment deleted", Severity.Success);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error deleting payment: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private string GetPaymentMethodName(int id)
+    {
+        return id switch
+        {
+            2002 => "Cash",
+            2003 => "Online",
+            2006 => "Cheque",
+            2007 => "Bank Transfer",
+            2008 => "UPI",
+            _ => "Unknown"
+        };
+    }
+}

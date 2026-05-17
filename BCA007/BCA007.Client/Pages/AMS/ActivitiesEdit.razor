@@ -1,0 +1,146 @@
+﻿@using BCA007.Shared.DTOs.AMS
+@using BCA007.Shared.Service.AMS
+@inject ISnackbar _snackbar
+@inject IActivitiesService _serv
+
+<MudDialog>
+    <DialogContent>
+        @* <EditForm>
+            <DataAnnotationsValidator /> *@
+        <MudPaper Class="pa-6 mt-6 rounded-xl" Elevation="3">
+
+            <MudText Typo="Typo.h6" Class="mb-4">
+                Activity Details
+            </MudText>
+
+            <MudForm @ref="_form" Model="Model">
+
+                <MudGrid Spacing="3">
+
+                    <!-- Activity Name -->
+                    <MudItem xs="12">
+                        <MudTextField Label="Activity Name"
+                                      For="@(() => Model.ActivityName)"
+                                      @bind-Value="Model.ActivityName"
+                                      Variant="Variant.Outlined"
+                                      Required="true"
+                                      Immediate="true"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Event"
+                                      HelperText="Enter the official activity name" />
+                    </MudItem>
+
+                    <!-- Description -->
+                    <MudItem xs="12">
+                        <MudTextField Label="Description"
+                                      For="@(() => Model.Description)"
+                                      @bind-Value="Model.Description"
+                                      Variant="Variant.Outlined"
+                                      Lines="4"
+                                      TextFieldStyle="TextFieldStyle.Outlined"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Description"
+                                      HelperText="Provide brief details about the activity" />
+                    </MudItem>
+
+                </MudGrid>
+
+            </MudForm>
+
+        </MudPaper>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <MudAlert Severity="Severity.Error" Dense Class="mt-2">
+                @_error
+            </MudAlert>
+        }
+        @*  </EditForm> *@
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Color="@(Action == "Delete" ? Color.Error : Color.Success)"
+                   Disabled="_loading"
+                   OnClick="SaveAsync">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate Size="Size.Small" />
+            }
+            else
+            {
+                @(Action == "Edit" ? "Update" : Action)
+
+            }
+        </MudButton>
+        <MudButton OnClick="Cancel">
+            Cancel
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [Parameter]
+    public ActivitiesDto Model { get; set; } = new();
+    [Parameter]
+    public string Action { get; set; } = "";
+
+    [CascadingParameter]
+    private IMudDialogInstance _MudDialog { get; set; } = default!;
+
+    private MudForm _form = default!;
+    private bool _loading;
+    private string? _error;
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _loading = true;
+
+        try
+        {
+            if ((Model.Id == 0) || (Action == "Create"))
+            {
+                var created = await _serv.CreateAsync(Model);
+                Model.Id = created.Id;
+                _snackbar.Add("Activity created successfully", Severity.Success);
+            }
+            else if (Action == "Delete")
+            {
+                await _serv.DeleteAsync(Model.Id);
+                _snackbar.Add("Activity deleted successfully", Severity.Success);
+            }
+            else
+            {
+                await _serv.UpdateAsync(Model);
+                _snackbar.Add("Activity updated successfully", Severity.Success);
+            }
+
+            _MudDialog.Close(DialogResult.Ok(Model));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add(ex.Message, Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add("Failed to save Activity", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        _MudDialog.Close(DialogResult.Cancel());
+    }
+}

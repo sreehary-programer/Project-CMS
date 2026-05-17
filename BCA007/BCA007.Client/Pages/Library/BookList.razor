@@ -1,0 +1,298 @@
+﻿@page "/Library/bookslist"
+@using BCA007.Shared.DTOs
+@using BCA007.Shared.Service.Library
+@inject ISnackbar _snackbar
+@inject IBookService _serv
+@inject IDialogService _dialog
+
+
+<MudPaper Class="pa-0 mt-6">
+    <AuthorizeView>
+        <Authorized >
+
+        <MudDataGrid Dense Hover Items="_list" Loading="_loading"
+                     QuickFilter="QuickFilter"
+                     SortMode="SortMode.Multiple"
+                     @ref="_grid">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Books List</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                              AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                <MudButtonGroup Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled">
+                    @{
+                        if (!(context.User.IsInRole("Student") || context.User.IsInRole("Parent") || context.User.IsInRole("Accountant")))
+                        {
+                         <MudButton StartIcon="@Icons.Material.Filled.Add"
+                               Color="Color.Primary" Size="Size.Small"
+                               OnClick="CreateDetails">
+                        Add
+                    </MudButton>
+                            }
+                      }
+                    <MudButton StartIcon="@Icons.Material.Filled.Refresh"
+                               Color="Color.Primary" Size="Size.Small"
+                               OnClick="OnRefresh">
+                        Refresh
+                    </MudButton>
+                    
+                  @*   <MudButton StartIcon="@Icons.Material.Filled.Help"
+                               Color="Color.Primary" Size="Size.Small"
+                               OnClick="CreateDetails">
+                        Help
+                    </MudButton> *@
+                </MudButtonGroup>
+
+            </ToolBarContent>
+
+            <Columns>
+                <TemplateColumn Title="Photo" Context="row">
+                    <CellTemplate>
+                        <MudAvatar Size="Size.Small">
+                            @{
+                                    var prof = @row.Item.ThumbURL ?? "/images/default-user.png";
+                            }
+                            <MudImage Src="@prof" />
+                        </MudAvatar>
+                    </CellTemplate>
+                </TemplateColumn>
+                @* <PropertyColumn Property="x => x.Id" Title="Id" /> *@
+                <PropertyColumn Property="x => x.Title" Title="Title" />
+                <PropertyColumn Property="x => x.Author" Title="Author" />
+                @* <PropertyColumn Property="x => x.Category_Name" Title="Category" /> *@
+                <PropertyColumn Property="x => x.Publisher_Name" Title="Publisher" />
+                <PropertyColumn Property="x => x.BorrowedBy" Title="Borrowed" />
+                <PropertyColumn Property="x => x.Issued_Date" Title="Issue on" Format="dd MMM yyyy" />
+                <PropertyColumn Property="x => x.Due_Date" Title="Due By" Format="dd MMM yyyy" />
+                     @{
+                        if (!(context.User.IsInRole("Student") || context.User.IsInRole("Parent") || context.User.IsInRole("Accountant")))
+                            {
+                <TemplateColumn Title="Actions">
+                    <CellTemplate Context="row">
+                           
+                                     <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                     Color="Color.Primary" Size="Size.Small"
+                                                   OnClick="@(() => EditDetails(row.Item))" />
+                            
+									<MudIconButton Icon="@Icons.Material.Filled.Book"
+												   Color="Color.Primary" Size="Size.Small"
+												   OnClick="@(() => EditIssue(row.Item))" />
+									<MudIconButton Icon="@Icons.Material.Filled.Delete"
+												   Color="Color.Error" Size="Size.Small"
+												   OnClick="@(() => DeleteDetails(row.Item))" />
+                              
+                        
+                    </CellTemplate>
+                </TemplateColumn>
+                        }
+                    }
+                </Columns>
+            <PagerContent>
+                <MudDataGridPager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
+            </PagerContent>
+        </MudDataGrid>
+     </Authorized>
+    </AuthorizeView>
+</MudPaper>
+
+@code {
+    private MudDataGrid<BookViewDto> _grid = default!;
+    private List<BookViewDto> _list = new();
+    private string _searchString = string.Empty;
+    private bool _loading;
+    protected override async Task OnInitializedAsync()
+    {
+        await OnRefresh();
+    }
+    private bool QuickFilter(BookViewDto x)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        return
+            (x.Title?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (x.Publisher_Name?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (x.Publisher_Address?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (x.Category_Name?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (x.Type_Name?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (x.Author?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (x.BorrowedBy?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false);
+    }
+
+    private async Task OnRefresh()
+    {
+        try
+        {
+            _loading = true;
+            //await Task.Delay(700);
+            _list = await _serv.GetAllAsync();
+            if (_grid is null) return;
+            await _grid.ReloadServerData(); // keeps sort & page
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Success);
+        }
+        finally
+        {
+            _loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+    private async Task EditIssue(BookViewDto dto)
+    {
+        // IMPORTANT: pass a COPY
+        string act = "Issue";
+        if (dto.Issued_To != null) act = "Return";
+
+        await OpenIssueDetailsDialog(dto, act);
+
+        // new BookViewDto
+        // {
+        //     Id = dto.Id,
+        //     Title = dto.Title,
+        //     Publisher_Id = dto.Publisher_Id,
+        //     Category_Id = dto.Category_Id,
+        //     Type_Id = dto.Type_Id,
+        //     Language_Id = dto.Language_Id,
+        //     Author = dto.Author,
+        //     Edition = dto.Edition,
+        //     Volume = dto.Volume,
+        //     Price = dto.Price,
+        //     Pages = dto.Pages,
+        //     Issued_To = dto.Issued_To,
+        //     Issued_Date = dto.Issued_Date,
+        //     Return_Date = dto.Return_Date,
+
+        //     ThumbURL = dto.ThumbURL
+        // }
+    }
+    private async Task CreateDetails()
+    {
+        await OpenDetailsDialog(new BookDto(), "Create");
+    }
+
+    private async Task EditDetails(BookViewDto dto)
+    {
+        // IMPORTANT: pass a COPY
+        await OpenDetailsDialog(new BookDto
+        {
+            Id = dto.Id,
+            Title = dto.Title,
+            Publisher_Id = dto.Publisher_Id,
+            Category_Id = dto.Category_Id,
+            Type_Id = dto.Type_Id,
+            Language_Id = dto.Language_Id,
+            Author = dto.Author,
+            Edition = dto.Edition,
+            Volume = dto.Volume,
+            Price = dto.Price,
+            Pages = dto.Pages,
+            ThumbURL = dto.ThumbURL
+        }, "Edit");
+    }
+    private async Task DeleteDetails(BookViewDto dto)
+    {
+        await OpenDetailsDialog(new BookDto
+        {
+            Id = dto.Id,
+            Title = dto.Title,
+            Publisher_Id = dto.Publisher_Id,
+            Category_Id = dto.Category_Id,
+            Type_Id = dto.Type_Id,
+            Language_Id = dto.Language_Id,
+            Author = dto.Author,
+            Edition = dto.Edition,
+            Volume = dto.Volume,
+            Price = dto.Price,
+            Pages = dto.Pages,
+            ThumbURL = dto.ThumbURL
+        }, "Delete");
+    }
+    private async Task OpenDetailsDialog(BookDto model, string action)
+    {
+        _loading = true;
+        var parameters = new DialogParameters
+        {
+            ["Model"] = model,
+            ["Action"] = action
+        };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false
+        };
+        IDialogReference dialog;
+        if ((action == "Issue") || (action == "Return"))
+        {
+            dialog = await _dialog.ShowAsync<BookIssueEdit>(
+         $"{action} Book",
+          parameters, options);
+        }
+        else
+        {
+            dialog = await _dialog.ShowAsync<BookEdit>(
+         $"{action} Book",
+          parameters, options);
+        }
+
+
+        var result = await dialog.Result;
+        _loading = false;
+
+        if (result == null)
+            return;
+        if (result.Canceled)
+            return;
+        if (result.Data == null)
+            return;
+
+        await OnRefresh();
+        await InvokeAsync(StateHasChanged);
+    }
+    private async Task OpenIssueDetailsDialog(BookViewDto model, string action)
+    {
+        _loading = true;
+        var parameters = new DialogParameters
+        {
+            ["Model"] = model,
+            ["Action"] = action
+        };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false
+        };
+        IDialogReference dialog;
+        if ((action == "Issue") || (action == "Return"))
+        {
+            dialog = await _dialog.ShowAsync<BookIssueEdit>(
+         $"{action} Book",
+          parameters, options);
+        }
+        else
+        {
+            dialog = await _dialog.ShowAsync<BookEdit>(
+         $"{action} Book",
+          parameters, options);
+        }
+
+
+        var result = await dialog.Result;
+        _loading = false;
+
+        if (result == null)
+            return;
+        if (result.Canceled)
+            return;
+        if (result.Data == null)
+            return;
+
+        await OnRefresh();
+        await InvokeAsync(StateHasChanged);
+    }
+}`

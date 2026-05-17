@@ -1,0 +1,275 @@
+﻿@page "/Attendance/attendentrylist"
+@page "/Attendance/attendentrylist/{FrmId:int}"
+@using BCA007.Shared.Service.Attendance
+@using BCA007.Shared.Service.Core
+@inject ISnackbar _snackbar
+@inject IAttendEntryService _serv
+@inject IDialogService _dialog
+@inject ILookupService _lookup
+
+<AuthorizeView>
+    <Authorized>
+<MudPaper Class="pa-0 mt-6">
+    <MudDataGrid Dense Hover Items="_list" Loading="_loading"
+                 QuickFilter="QuickFilter"
+                 SortMode="SortMode.Multiple"
+                 @ref="_grid">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Attendance Entry Form</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            <MudButtonGroup Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled">
+               
+                <MudButton StartIcon="@Icons.Material.Filled.Refresh"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Refresh
+                </MudButton>
+           
+            </MudButtonGroup>
+        </ToolBarContent>
+
+        <Columns>
+            <PropertyColumn Property="x => x.Date" Title="Date" />
+            <PropertyColumn Property="x => x.FullName" Title="Student Name" />
+            <PropertyColumn Property="x => x.Class_Name" Title="Class Name" />
+            <TemplateColumn Title="Edit Period 1 Attendance">
+
+                <CellTemplate Context="row1">
+                    <MudSelect T="int?" @bind-Value="row1.Item.Period1_Att_Id"
+                               Required="true"
+                               Label="Attendance"
+                               Variant="Variant.Outlined"
+                               Adornment="Adornment.Start"
+                               AdornmentIcon="@Icons.Material.Filled.EventAvailable"
+                               AdornmentColor="Color.Primary">
+                        @foreach (var _option in _attform)
+                        {
+                            <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                        }
+                    </MudSelect>
+
+            </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Edit Period 2 Attendance">
+
+                <CellTemplate Context="row1">
+                    <MudSelect T="int?" @bind-Value="row1.Item.Period2_Att_Id"
+                               Required="true"
+                               Label="Attendance"
+                               Variant="Variant.Outlined"
+                               Adornment="Adornment.Start"
+                               AdornmentIcon="@Icons.Material.Filled.EventAvailable"
+                               AdornmentColor="Color.Primary">
+                        @foreach (var _option in _attform)
+                        {
+                            <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                </CellTemplate>
+            </TemplateColumn> 
+            <TemplateColumn Title="Edit Period 3 Attendance">
+
+                <CellTemplate Context="row1">
+                    <MudSelect T="int?" @bind-Value="row1.Item.Period3_Att_Id"
+                               Required="true"
+                               Label="Attendance"
+                               Variant="Variant.Outlined"
+                               Adornment="Adornment.Start"
+                               AdornmentIcon="@Icons.Material.Filled.EventAvailable"
+                               AdornmentColor="Color.Primary">
+                        @foreach (var _option in _attform)
+                        {
+                            <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                </CellTemplate>
+            </TemplateColumn>  <TemplateColumn Title="Edit Period 4 Attendance">
+
+                <CellTemplate Context="row1">
+                    <MudSelect T="int?" @bind-Value="row1.Item.Period4_Att_Id"
+                               Required="true"
+                               Label="Attendance"
+                               Variant="Variant.Outlined"
+                               Adornment="Adornment.Start"
+                               AdornmentIcon="@Icons.Material.Filled.EventAvailable"
+                               AdornmentColor="Color.Primary">
+                        @foreach (var _option in _attform)
+                        {
+                            <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                </CellTemplate>
+            </TemplateColumn>  
+            <TemplateColumn Title="Edit Period 5 Attendance">
+
+                <CellTemplate Context="row1">
+                    <MudSelect T="int?" @bind-Value="row1.Item.Period5_Att_Id"
+                               Required="true"
+                               Label="Attendance"
+                               Variant="Variant.Outlined"
+                               Adornment="Adornment.Start"
+                               AdornmentIcon="@Icons.Material.Filled.EventAvailable"
+                               AdornmentColor="Color.Primary">
+                        @foreach (var _option in _attform)
+                        {
+                            <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                </CellTemplate>
+            </TemplateColumn>
+
+
+
+
+            <TemplateColumn Title="Actions">
+                <CellTemplate Context="row">
+                    <MudIconButton Icon="@Icons.Material.Filled.Save"
+                                   Color="Color.Success"
+                                   Size="Size.Small"
+                                   OnClick="@(() => SaveRow(row.Item))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Color="Color.Error"
+                                   Size="Size.Small"
+                                   Disabled="_loading"
+                                   OnClick="@(() => ConfirmDelete(row.Item))" />
+
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
+        </PagerContent>
+    </MudDataGrid>
+
+</MudPaper>
+    </Authorized>
+</AuthorizeView>
+@code {
+    [Parameter]
+    public int? FrmId{ get; set; }
+    private MudDataGrid<AttendEntryViewDto> _grid = default!;
+    private List<AttendEntryViewDto> _list = new();
+    private string _searchString = string.Empty;
+    private bool _loading;
+    protected override async Task OnParametersSetAsync()
+    {
+        await OnRefresh();
+    }
+    private List<LookupItemDto> _attform = new();
+
+
+    private bool QuickFilter(AttendEntryViewDto x)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+       
+         return x.Att_Form_Id.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            ||x.Date.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.UserName.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.FullName.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Class_Name.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        _attform = await _lookup.GetAttendDefaultAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnRefresh()
+    {
+        try
+        {
+            _loading = true;
+
+            if (FrmId.HasValue && FrmId.Value > 0)
+                _list = await _serv.GetAttendanceById(FrmId);
+            else
+                _list = await _serv.GetAllAsync();
+
+            if (_list == null || !_list.Any())
+                _snackbar.Add("No attendance found.", Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+    private async Task ConfirmDelete(AttendEntryViewDto item)
+    {
+        var confirm = await _dialog.ShowMessageBox(
+            "Confirm Delete",
+            $"Delete attendance for {item.FullName} on {item.Date:d}?",
+            yesText: "Delete",
+            cancelText: "Cancel");
+
+        if (confirm == true)
+        {
+            await DeleteRow(item);
+        }
+    }
+    private async Task SaveRow(AttendEntryViewDto item)
+    {
+        try
+        {
+            var dto = new AttendEntryDto
+            {
+                Id = item.Id,
+                Att_Form_Id = item.Att_Form_Id,
+                Student_Id = item.Student_Id,
+                Period1_Att_Id = item.Period1_Att_Id,
+                Period2_Att_Id = item.Period2_Att_Id,
+                Period3_Att_Id = item.Period3_Att_Id,
+                Period4_Att_Id = item.Period4_Att_Id,
+                Period5_Att_Id = item.Period5_Att_Id
+            };
+
+            await _serv.UpdateAsync(dto);
+            _snackbar.Add("Saved successfully", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Error);
+        }
+
+    }
+
+    private async Task DeleteRow(AttendEntryViewDto item)
+    {
+        try
+        {
+            if (item.Id <= 0)
+            {
+                _snackbar.Add("Invalid attendance record.", Severity.Error);
+                return;
+            }
+
+            _loading = true;
+
+            await _serv.DeleteAsync(item.Id);
+
+            _snackbar.Add("Attendance deleted successfully.", Severity.Success);
+
+            await OnRefresh();
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

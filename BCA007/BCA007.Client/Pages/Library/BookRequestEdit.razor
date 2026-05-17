@@ -1,0 +1,224 @@
+﻿@using BCA007.Shared.DTOs
+@using BCA007.Shared.Service.Core
+@using BCA007.Shared.Service.Library
+@inject ISnackbar _snackbar
+@inject IBookRequestService _serv
+@inject ILookupService _lookup
+<MudDialog>
+    <DialogContent>
+        <MudPaper Class="pa-6 mt-6" Elevation="2">
+
+            <MudText Typo="Typo.h6" Class="mb-4">
+                Book Request Details
+            </MudText>
+
+            <MudForm @ref="_form" Model="Model">
+
+                <MudGrid Spacing="3">
+
+                    <!-- Title & Author -->
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Title"
+                                      Variant="Variant.Outlined"
+                                      @bind-Value="Model.Title"
+                                      Required="true"
+                                      RequiredError="Title is required" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Author"
+                                      Variant="Variant.Outlined"
+                                      @bind-Value="Model.Author" />
+                    </MudItem>
+
+                    <!-- Requested By & Date -->
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="int?"
+                                   Label="Requested By"
+                                   Variant="Variant.Outlined"
+                                   Required="true"
+                                   @bind-Value="Model.Requested_By">
+                            @foreach (var user in _users)
+                            {
+                                <MudSelectItem Value="@user.Id">@user.Text</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudDatePicker Label="Date Requested"
+                                       Variant="Variant.Outlined"
+                                       @bind-Date="Model.Date_Requested" />
+                    </MudItem>
+
+                    <!-- Copies & Price -->
+                    <MudItem xs="12" md="6">
+                        <MudNumericField T="int?"
+                                         Label="No of Copies"
+                                         Variant="Variant.Outlined"
+                                         Min="1"
+                                         @bind-Value="Model.No_Of_Copies" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudNumericField T="decimal?"
+                                         Label="Approximate Price"
+                                         Variant="Variant.Outlined"
+                                         Min="0"
+                                         Adornment="Adornment.Start"
+                                         AdornmentText="₹"
+                                         @bind-Value="Model.Approximate_Price" />
+                    </MudItem>
+
+                    <!-- Category & Language -->
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="int?"
+                                   Label="Category"
+                                   Variant="Variant.Outlined"
+                                   Required="true"
+                                   @bind-Value="Model.Category_Id">
+                            @foreach (var cat in _category)
+                            {
+                                <MudSelectItem Value="@cat.Id">@cat.Text</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="int?"
+                                   Label="Language"
+                                   Variant="Variant.Outlined"
+                                   Required="true"
+                                   @bind-Value="Model.Language_Id">
+                            @foreach (var lang in _language)
+                            {
+                                <MudSelectItem Value="@lang.Id">@lang.Text</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <!-- Edition & Volume -->
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Edition"
+                                      Variant="Variant.Outlined"
+                                      @bind-Value="Model.Edition" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Volume"
+                                      Variant="Variant.Outlined"
+                                      @bind-Value="Model.Volume" />
+                    </MudItem>
+
+                </MudGrid>
+
+            </MudForm>
+
+        </MudPaper>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <MudAlert Severity="Severity.Error" Dense Class="mt-2">
+                @_error
+            </MudAlert>
+        }
+        @*  </EditForm> *@
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Color="@(Action == "Delete" ? Color.Error : Color.Success)"
+                   Disabled="_loading"
+                   OnClick="SaveAsync">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate Size="Size.Small" />
+            }
+            else
+            {
+                @(Action == "Edit" ? "Update" : Action)
+
+            }
+        </MudButton>
+        <MudButton OnClick="Cancel">
+            Cancel
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [Parameter]
+    public BookRequestDto Model { get; set; } = new();
+    [Parameter]
+    public string Action { get; set; } = "";
+
+    [CascadingParameter]
+    private IMudDialogInstance _MudDialog { get; set; } = default!;
+
+    private MudForm _form = default!;
+    private bool _loading;
+    private string? _error;
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _loading = true;
+
+        try
+        {
+            if ((Model.Id == 0) || (Action == "Create"))
+            {
+                var created = await _serv.CreateAsync(Model);
+                Model.Id = created.Id;
+                _snackbar.Add("Book Requested successfully", Severity.Success);
+            }
+            else if (Action == "Delete")
+            {
+                await _serv.DeleteAsync(Model.Id);
+                _snackbar.Add("Book Request Deleted successfully", Severity.Success);
+            }
+            else
+            {
+                await _serv.UpdateAsync(Model);
+                _snackbar.Add("Book Request updated successfully", Severity.Success);
+            }
+
+            _MudDialog.Close(DialogResult.Ok(Model));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add(ex.Message, Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add("Failed to Request Book", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private List<LookupItemDto> _users = new();
+    private List<LookupItemDto> _category = new();
+    private List<LookupItemDto> _language = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _category = await _lookup.GetBookCategorysAsync();
+        _language = await _lookup.GetLanguageAsync();
+        _users = await _lookup.GetUsersAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+    private void Cancel()
+    {
+        _MudDialog.Close(DialogResult.Cancel());
+    }
+}

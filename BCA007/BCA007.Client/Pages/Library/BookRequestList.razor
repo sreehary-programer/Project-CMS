@@ -1,0 +1,211 @@
+﻿@page "/library/bookrequestlist"
+@using BCA007.Shared.DTOs
+@using BCA007.Shared.Service.Library
+@inject ISnackbar _snackbar
+@inject IBookRequestService _serv
+@inject IDialogService _dialog
+
+
+<MudPaper Class="pa-0 mt-6">
+    <MudDataGrid Dense Hover Items="_list" Loading="_loading"
+                 QuickFilter="QuickFilter"
+                 SortMode="SortMode.Multiple"
+                 @ref="_grid">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Book Request List</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            <MudButtonGroup Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="CreateDetails">
+                    Book Request
+                </MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.Refresh"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Refresh
+                </MudButton>
+               @*  <MudButton StartIcon="@Icons.Material.Filled.Help"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Help
+                </MudButton> *@
+            </MudButtonGroup>
+        </ToolBarContent>
+
+        <Columns>
+            <PropertyColumn Property="x => x.Title" Title="Title" />
+            <PropertyColumn Property="x => x.Requested_By" Title="Requested By" />
+            <PropertyColumn Property="x => x.Author" Title="Author" />
+            <PropertyColumn Property="x => x.Date_Requested" Title="Date Requested" Format="dd-MM-yyyy" />
+            <PropertyColumn Property="x => x.No_Of_Copies" Title="No of Copies" />
+            <PropertyColumn Property="x => x.Approximate_Price" Title="Approximate Price" />
+            <PropertyColumn Property="x => x.Category_Id" Title="Category" />
+            <PropertyColumn Property="x => x.Language_Id" Title="Language" />
+            <PropertyColumn Property="x => x.Edition" Title="Edition" />
+            <PropertyColumn Property="x => x.Volume" Title="Volume" />
+
+            <TemplateColumn Title="Actions">
+                <CellTemplate Context="row">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Color="Color.Primary" Size="Size.Small"
+                                   OnClick="@(() => EditDetails(row.Item))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Color="Color.Error" Size="Size.Small"
+                                   OnClick="@(() => DeleteDetails(row.Item))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
+        </PagerContent>
+    </MudDataGrid>
+
+</MudPaper>
+
+@code {
+    private MudDataGrid<BookRequestDto> _grid;
+    private List<BookRequestDto> _list = new();
+
+    private bool _loading;
+    private string _searchString = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        OnRefresh();
+    }
+
+    private bool QuickFilter(BookRequestDto x)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        return x.Id.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Title.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Requested_By.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Author.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Date_Requested.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.No_Of_Copies.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Approximate_Price.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Category_Id.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Language_Id.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Edition.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Volume.Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+
+
+    }
+
+    private void OnSearch(string text)
+    {
+        _searchString = text;
+        OnRefresh();
+    }
+
+    private async void OnRefresh()
+    {
+        try
+        {
+            _loading = true;
+            _list = await _serv.GetAllAsync();
+            await _grid.ReloadServerData(); // keeps sort & page
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Success);
+        }
+        finally
+        {
+            _loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task CreateDetails()
+    {
+        await OpenDetailsDialog(new BookRequestDto(), "Create");
+    }
+
+    private async Task EditDetails(BookRequestDto dto)
+    {
+        // await OpenDetailsDialog(new BookRequestDto
+        // {
+        //     Id = dto.Id,
+        //     Category_Name = dto.Category_Name
+        // }, "Edit");
+        await OpenDetailsDialog(new BookRequestDto
+        {
+            Id = dto.Id,
+            Title = dto.Title,
+            Requested_By = dto.Requested_By,
+            Author = dto.Author,
+            Date_Requested = dto.Date_Requested,
+            No_Of_Copies = dto.No_Of_Copies,
+            Approximate_Price = dto.Approximate_Price,
+            Category_Id = dto.Category_Id,
+            Language_Id = dto.Language_Id,
+            Edition = dto.Edition,
+            Volume = dto.Volume,
+        }, "Edit");
+
+    }
+    private async Task DeleteDetails(BookRequestDto dto)
+    {
+        // await OpenDetailsDialog(new BookRequestDto
+        // {
+        //     Id = dto.Id,
+        //     Category_Name = dto.Category_Name
+        // }, "Delete");
+        await OpenDetailsDialog(new BookRequestDto
+        {
+            Id = dto.Id,
+            Title = dto.Title,
+            Requested_By = dto.Requested_By,
+            Author = dto.Author,
+            Date_Requested = dto.Date_Requested,
+            No_Of_Copies = dto.No_Of_Copies,
+            Approximate_Price = dto.Approximate_Price,
+            Category_Id = dto.Category_Id,
+            Language_Id = dto.Language_Id,
+            Edition = dto.Edition,
+            Volume = dto.Volume,
+        }, "Delete");
+
+    }
+    private async Task OpenDetailsDialog(BookRequestDto model, string action)
+    {
+        _loading = true;
+        var parameters = new DialogParameters
+            {
+                ["Model"] = model,
+                ["Action"] = action
+            };
+        var options = new DialogOptions
+            {
+                CloseOnEscapeKey = true,
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                BackdropClick = false
+            };
+
+        var dialog = await _dialog.ShowAsync<BookRequestEdit>(
+           $"{action} Book Request",
+            parameters, options);
+
+        var result = await dialog.Result;
+        _loading = false;
+
+        if (result == null)
+            return;
+        if (result.Canceled)
+            return;
+        if (result.Data == null)
+            return;
+
+        OnRefresh();
+        await InvokeAsync(StateHasChanged);
+    }
+   
+    
+}

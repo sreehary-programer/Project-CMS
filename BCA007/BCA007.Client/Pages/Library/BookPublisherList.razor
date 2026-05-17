@@ -1,0 +1,162 @@
+﻿@page "/library/bookPublisherlist"
+@using BCA007.Shared.DTOs
+@using BCA007.Shared.Service.Library
+@inject ISnackbar _snackbar
+@inject IBookPublisherService _serv
+@inject IDialogService _dialog
+
+<MudPaper Class="pa-0 mt-6">
+    <MudDataGrid Dense Hover Items="_list" Loading="_loading"
+                 QuickFilter="QuickFilter"
+                 SortMode="SortMode.Multiple"
+                 @ref="_grid">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Book Publisher List</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            <MudButtonGroup Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="CreateDetails">
+                    Add
+                </MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.Refresh"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Refresh
+                </MudButton>
+               @*  <MudButton StartIcon="@Icons.Material.Filled.Help"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Help
+                </MudButton> *@
+            </MudButtonGroup>
+        </ToolBarContent>
+
+        <Columns>
+            <PropertyColumn Property="x => x.Publisher_Name" Title="Name" />
+            <TemplateColumn Title="Actions">
+                <CellTemplate Context="row">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Color="Color.Primary" Size="Size.Small"
+                                   OnClick="@(() => EditDetails(row.Item))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Color="Color.Error" Size="Size.Small"
+                                   OnClick="@(() => DeleteDetails(row.Item))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
+        </PagerContent>
+    </MudDataGrid>
+
+</MudPaper>
+
+@code {
+    private MudDataGrid<BookPublisherDto> _grid;
+    private List<BookPublisherDto> _list = new();
+
+    private bool _loading;
+    private string _searchString = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        OnRefresh();
+    }
+
+    private bool QuickFilter(BookPublisherDto x)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        return x.Id.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Publisher_Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Publisher_Address.Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void OnSearch(string text)
+    {
+        _searchString = text;
+        OnRefresh();
+    }
+
+    private async void OnRefresh()
+    {
+        try
+        {
+            _loading = true;
+            _list = await _serv.GetAllAsync();
+            await _grid.ReloadServerData(); // keeps sort & page
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Success);
+        }
+        finally
+        {
+            _loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task CreateDetails()
+    {
+        await OpenDetailsDialog(new BookPublisherDto(), "Create");
+    }
+
+    private async Task EditDetails(BookPublisherDto dto)
+    {
+        await OpenDetailsDialog(new BookPublisherDto
+        {
+            Id = dto.Id,
+            Publisher_Name = dto.Publisher_Name,
+            Publisher_Address = dto.Publisher_Address
+        }, "Edit");
+    }
+    private async Task DeleteDetails(BookPublisherDto dto)
+    {
+        await OpenDetailsDialog(new BookPublisherDto
+        {
+            Id = dto.Id,
+            Publisher_Name = dto.Publisher_Name,
+            Publisher_Address = dto.Publisher_Address
+        }, "Delete");
+    }
+    private async Task OpenDetailsDialog(BookPublisherDto model, string action)
+    {
+        _loading = true;
+        var parameters = new DialogParameters
+        {
+            ["Model"] = model,
+            ["Action"] = action
+        };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false
+        };
+
+        var dialog = await _dialog.ShowAsync<BookPublisherEdit>(
+           $"{action} Book Publisher",
+            parameters, options);
+
+        var result = await dialog.Result;
+        _loading = false;
+
+        if (result == null)
+            return;
+        if (result.Canceled)
+            return;
+        if (result.Data == null)
+            return;
+
+        OnRefresh();
+        await InvokeAsync(StateHasChanged);
+    }
+}
+
+

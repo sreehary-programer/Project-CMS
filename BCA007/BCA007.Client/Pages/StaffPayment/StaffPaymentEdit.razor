@@ -1,0 +1,169 @@
+@page "/staff-payments/add"
+@page "/staff-payments/add/{staffId:int}"
+@page "/staff-payments/edit/{id:int}"
+@using BCA007.Shared.DTOs
+@using BCA007.Shared.Service.Users
+@inject IStaffPaymentService StaffPaymentService
+@inject IStaffService StaffService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudText Typo="Typo.h5" GutterBottom="true" Class="mb-4">@Title</MudText>
+    <MudCard Elevation="4" Class="rounded-lg">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Payment Details</MudText>
+            </CardHeaderContent>
+            <CardHeaderActions>
+                <MudIconButton Icon="@Icons.Material.Filled.AttachMoney" Color="Color.Primary" />
+            </CardHeaderActions>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudForm @ref="_form" @bind-IsValid="@_success">
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudAutocomplete T="int" Label="Staff Member" @bind-Value="payment.Staff_Id"
+                                         SearchFunc="@SearchStaff" ToStringFunc="@(id => staffList.FirstOrDefault(s => s.Id == id)?.FullName ?? string.Empty)"
+                                         ResetValueOnEmptyText="true" CoerceText="true" CoerceValue="true"
+                                         AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Primary" Required="true" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                         <MudSelect T="int" Label="Payment Mode" @bind-Value="payment.Payment_Mode_Id" Required="true" AnchorOrigin="Origin.BottomCenter" Variant="Variant.Outlined">
+                            <MudSelectItem Value="1">Cash</MudSelectItem>
+                            <MudSelectItem Value="2">Cheque</MudSelectItem>
+                            <MudSelectItem Value="3">Bank Transfer</MudSelectItem>
+                            <MudSelectItem Value="4">UPI</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudNumericField @bind-Value="payment.Amount" Label="Amount" Variant="Variant.Outlined" Min="0" Required="true" Format="N2" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.CurrencyRupee"/>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudDatePicker Label="Payment Date" @bind-Date="date" Required="true" Variant="Variant.Outlined"/>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudDatePicker Label="Due Date" @bind-Date="dueDate" Variant="Variant.Outlined"/>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="string" Label="Status" @bind-Value="payment.Status" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter">
+                            <MudSelectItem Value="@("Paid")">Paid</MudSelectItem>
+                            <MudSelectItem Value="@("Unpaid")">Unpaid</MudSelectItem>
+                            <MudSelectItem Value="@("Partial")">Partial</MudSelectItem>
+                            <MudSelectItem Value="@("Overdue")">Overdue</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
+        </MudCardContent>
+        <MudCardActions Class="pa-4 justify-end">
+            <MudButton Variant="Variant.Text" OnClick="Cancel" Class="mr-2">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" StartIcon="@Icons.Material.Filled.Save">Save Payment</MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    [Parameter] public int? id { get; set; }
+    [Parameter] public int? staffId { get; set; }
+
+    private StaffPaymentDto payment = new StaffPaymentDto { Payment_Date = DateTime.Today, Status = "Paid" };
+    private DateTime? date = DateTime.Today;
+    private DateTime? dueDate;
+    private List<StaffViewDto> staffList = new();
+    private MudForm _form;
+    private bool _success;
+
+    private string Title => id.HasValue ? "Edit Payment" : "Add Payment";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var allStaff = await StaffService.GetAllAsync();
+        staffList = allStaff.Where(s => string.Equals(s.RoleName, "Teacher", StringComparison.OrdinalIgnoreCase)).ToList();
+
+        if (id.HasValue)
+        {
+            payment = await StaffPaymentService.GetStaffPaymentByIdAsync(id.Value);
+            date = payment.Payment_Date;
+            dueDate = payment.Due_Date;
+        }
+        else 
+        {
+            if (staffId.HasValue)
+            {
+                payment.Staff_Id = staffId.Value;
+            }
+
+            var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+            var query = uri.Query;
+            if (!string.IsNullOrEmpty(query))
+            {
+               var args = query.TrimStart('?').Split('&');
+               foreach (var arg in args)
+               {
+                   var parts = arg.Split('=');
+                   if (parts.Length == 2)
+                   {
+                       var key = parts[0];
+                       var val = System.Net.WebUtility.UrlDecode(parts[1]);
+                       if (key.Equals("dueDate", StringComparison.OrdinalIgnoreCase) && DateTime.TryParse(val, out var d))
+                       {
+                           dueDate = d;
+                       }
+                       else if (key.Equals("status", StringComparison.OrdinalIgnoreCase))
+                       {
+                           payment.Status = val;
+                       }
+                   }
+               }
+            }
+        }
+    }
+
+    private async Task<IEnumerable<int>> SearchStaff(string value, CancellationToken token)
+    {
+        // In real app, perform server-side search. Here filtering client-side list.
+        if (string.IsNullOrEmpty(value))
+            return staffList.Select(x => x.Id);
+        
+        return staffList.Where(x => x.FullName.Contains(value, StringComparison.InvariantCultureIgnoreCase)).Select(x => x.Id);
+    }
+
+    private async Task Save()
+    {
+        await _form.Validate();
+
+        if (_form.IsValid)
+        {
+            try 
+            {
+                if (date.HasValue)
+                {
+                    payment.Payment_Date = date.Value;
+                }
+                payment.Due_Date = dueDate;
+
+                if (id.HasValue)
+                {
+                    await StaffPaymentService.UpdateStaffPaymentAsync(payment);
+                    Snackbar.Add("Payment updated", Severity.Success);
+                }
+                else
+                {
+                    await StaffPaymentService.AddStaffPaymentAsync(payment);
+                    Snackbar.Add("Payment added", Severity.Success);
+                }
+                Navigation.NavigateTo("/staff-payments");
+            }
+            catch (Exception ex)
+            {
+                 Snackbar.Add($"Error saving payment: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/staff-payments");
+    }
+}

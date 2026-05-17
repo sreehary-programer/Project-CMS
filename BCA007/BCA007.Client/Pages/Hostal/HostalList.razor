@@ -1,0 +1,171 @@
+﻿@page "/hostal/Hostallist"
+@using BCA007.Shared.Service.Hostal
+@inject ISnackbar _snackbar
+@inject IHostalServices _serv
+@inject IDialogService _dialog
+@inject NavigationManager _nav
+
+<MudChipSet T="string" Class="d-flex justify-content-start mb-3">
+    <MudChip Color="Color.Primary" Variant="Variant.Outlined" OnClick="@(() => _nav.NavigateTo("/hostal/hostaltlist"))">Hostel List</MudChip>
+    <MudChip Color="Color.Primary" Variant="Variant.Outlined" OnClick="@(() => _nav.NavigateTo("/hostal/hostalroomlist"))">Hostel Rooms</MudChip>
+    <MudChip Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => _nav.NavigateTo("/hostal/hostallist"))">Hostels</MudChip>
+</MudChipSet>
+<MudPaper Class="pa-0 mt-6">
+    <MudDataGrid Dense Hover Items="_Hostales" Loading="_loading"
+                 QuickFilter="QuickFilter"
+                 SortMode="SortMode.Multiple"
+                 @ref="_grid">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Hostal List</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            <MudButtonGroup Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="CreateDetails">
+                    Add
+                </MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.Refresh"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Refresh
+                </MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.Help"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Help
+                </MudButton>
+            </MudButtonGroup>
+        </ToolBarContent>
+
+        <Columns>
+            <PropertyColumn Property="x => x.Id" Title="Id" />
+            <PropertyColumn Property="x => x.Hostel_Name" Title=" Hostal Name" />
+            <PropertyColumn Property="x => x.Warden_Name" Title="Warden Name" />
+            <TemplateColumn Title="Actions">
+                <CellTemplate Context="row">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Color="Color.Primary" Size="Size.Small"
+                                   OnClick="@(() => EditDetails(row.Item))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Color="Color.Error" Size="Size.Small"
+                                   OnClick="@(() => DeleteDetails(row.Item))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
+        </PagerContent>
+    </MudDataGrid>
+
+</MudPaper>
+
+@code {
+    private MudDataGrid<HostalDto> _grid;
+    private List<HostalDto> _Hostales = new();
+
+    private bool _loading;
+    private string _searchString = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        OnRefresh();
+    }
+
+    private bool QuickFilter(HostalDto x)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        return x.Id.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Warden_Name.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Hostel_Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Type_Id.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void OnSearch(string text)
+    {
+        _searchString = text;
+        OnRefresh();
+    }
+
+    private async void OnRefresh()
+    {
+        try
+        {
+            _loading = true;
+            _Hostales = await _serv.GetAllAsync();
+            await _grid.ReloadServerData(); // keeps sort & page
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Success);
+        }
+        finally
+        {
+            _loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task CreateDetails()
+    {
+        await OpenDetailsDialog(new HostalDto(), "Create");
+    }
+
+    private async Task EditDetails(HostalDto dto)
+    {
+        // IMPORTANT: pass a COPY
+        await OpenDetailsDialog(new HostalDto
+        {
+            Id = dto.Id,
+            Hostel_Name = dto.Hostel_Name,
+            Warden_Name = dto.Warden_Name,
+			Type_Id = dto.Type_Id,
+        }, "Edit");
+    }
+    private async Task DeleteDetails(HostalDto dto)
+    {
+        await OpenDetailsDialog(new HostalDto
+        {
+            Id = dto.Id,
+            Hostel_Name = dto.Hostel_Name,
+            Warden_Name = dto.Warden_Name,
+			Type_Id = dto.Type_Id
+        }, "Delete");
+    }
+    private async Task OpenDetailsDialog(HostalDto model, string action)
+    {
+        _loading = true;
+        var parameters = new DialogParameters
+        {
+            ["Model"] = model,
+            ["Action"] = action
+        };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false
+        };
+
+        var dialog = await _dialog.ShowAsync<HostalEdit>(
+           $"{action} Hostal",
+            parameters, options);
+
+        var result = await dialog.Result;
+        _loading = false;
+
+        if (result == null)
+            return;
+        if (result.Canceled)
+            return;
+        if (result.Data == null)
+            return;
+
+        OnRefresh();
+        await InvokeAsync(StateHasChanged);
+    }
+}

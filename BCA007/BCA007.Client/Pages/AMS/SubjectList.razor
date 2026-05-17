@@ -1,0 +1,164 @@
+﻿@page "/subject/subjectlist"
+@using BCA007.Shared.Service.AMS
+@using Microsoft.AspNetCore.Authorization
+@using MudBlazor
+@using MudBlazor.Services
+@inject ISubjectService _serv
+@inject ISnackbar _snackbar
+@inject IDialogService _dialog
+@attribute [Authorize]
+<AuthorizeView>
+
+
+    <MudDataGrid Items="@_subject" Loading="_loading" QuickFilter="QuickFilter" SortMode="SortMode.Multiple" @ref="_grid">
+
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Subject List</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start"
+                          Immediate="true" AdornmentIcon="@Icons.Material.Filled.Search"
+                          IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            <MudButtonGroup Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled">
+                <MudButton StartIcon="@Icons.Material.Filled.Add" Color="Color.Primary" Size="Size.Small" OnClick="CreateDetails">Add</MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.Refresh" Color="Color.Primary" Size="Size.Small" OnClick="OnRefresh">Refresh</MudButton>
+                @* <MudButton StartIcon="@Icons.Material.Filled.Help" Color="Color.Primary" Size="Size.Small" OnClick="OnHelp">Help</MudButton> *@
+            </MudButtonGroup>
+
+        </ToolBarContent>
+        <Columns>
+            <PropertyColumn Property="x => x.Subject_Name" Title="Subject" />
+            <PropertyColumn Property="x => x.Subject_Code" Title="Subject Code" />
+
+            <TemplateColumn CellClass="d-flex justify-end">
+                <CellTemplate context="row">
+
+                    <MudIconButton icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => EditDetails(row.Item))" />
+
+                    <MudIconButton icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteDetails(row.Item))" />
+
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager PageSizeOptions="new int[] { 5, 10, 15, 25, 50, 100 }" />
+        </PagerContent>
+
+
+    </MudDataGrid>
+</AuthorizeView>
+@code {
+    private MudDataGrid<SubjectDto> _grid;
+    private bool _loading = true;
+    private List<SubjectDto> _subject = new();
+    private string _searchString = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await OnRefresh();
+    }
+
+    private bool QuickFilter(SubjectDto x)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+        return x.Subject_Code.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+        || x.Subject_Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+        || x.Id.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+
+    }
+    public async Task EditDetails(SubjectDto dto)
+    {
+        await OpenDetailsDialog(new SubjectDto()
+        {
+            Id = dto.Id,
+            Subject_Name = dto.Subject_Name,
+            Subject_Code = dto.Subject_Code
+        }, "Edit");
+
+    }
+    public async Task DeleteDetails(SubjectDto dto)
+    {
+        await OpenDetailsDialog(new SubjectDto()
+        {
+            Id = dto.Id,
+            Subject_Name = dto.Subject_Name,
+            Subject_Code = dto.Subject_Code
+        }, "Delete");
+    }
+
+    // public async void OnSearch()
+    // {
+
+    // }
+
+    public async Task OnRefresh()
+    {
+        try
+        {
+            _loading = true;
+            await Task.Delay(500);
+            _subject = await _serv.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Error);
+
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+
+
+    }
+    // public async void OnHelp()
+    // {
+
+    // }
+    public async Task CreateDetails()
+    {
+        await OpenDetailsDialog(new SubjectDto(), "Create");
+    }
+
+
+
+
+    public async Task OpenDetailsDialog(SubjectDto model, string action)
+    {
+
+        _loading = true;
+        var parameters = new DialogParameters
+        {
+            ["Model"] = model,
+            ["Action"] = action
+        };
+
+        var options = new DialogOptions
+        {
+
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false
+        };
+
+        var dialog = await _dialog.ShowAsync<SubjectEdit>($"{action} Subject", parameters, options);
+
+        _loading = false;
+        var result = await dialog.Result;
+        if (result == null)
+            return;
+        if (result.Canceled)
+            return;
+        if (result.Data == null)
+            return;
+
+        await OnRefresh();
+        await InvokeAsync(StateHasChanged);
+
+
+    }
+
+
+}

@@ -1,0 +1,116 @@
+@using BCA007.Shared.DTOs
+@using BCA007.Shared.Service.Student
+@using MudBlazor
+@inject IStudentPaymentService StudentPaymentService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudCard Elevation="0" Class="rounded-lg">
+             <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">Edit Payment Details</MudText>
+                </CardHeaderContent>
+                <CardHeaderActions>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" />
+                </CardHeaderActions>
+            </MudCardHeader>
+            <MudCardContent>
+                @if (_loading)
+                {
+                    <MudSkeleton Width="100%" Height="200px" />
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-4" Icon="@Icons.Material.Filled.Warning">
+                        <MudText><strong>Note:</strong> Editing the amount may affect the fee status. Please adjust manually if needed.</MudText>
+                    </MudAlert>
+
+                    <MudForm @ref="_form" @bind-IsValid="@_success">
+                        <MudGrid>
+                             <MudItem xs="12">
+                                <MudNumericField @bind-Value="payment.Amount_Paid" Label="Amount Paid" Variant="Variant.Outlined" Format="N2" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.CurrencyRupee" Required="true" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudDatePicker Label="Payment Date" @bind-Date="PaymentDate" Required="true" Variant="Variant.Outlined" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="payment.Receipt_Number" Label="Receipt Number" Required="true" Variant="Variant.Outlined" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudSelect T="int" Label="Payment Method" @bind-Value="payment.Payment_Id" Required="true" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter">
+                                    <MudSelectItem Value="1">Cash</MudSelectItem>
+                                    <MudSelectItem Value="2">Cheque</MudSelectItem>
+                                    <MudSelectItem Value="3">Bank Transfer</MudSelectItem>
+                                    <MudSelectItem Value="4">UPI</MudSelectItem>
+                                </MudSelect>
+                            </MudItem>
+                        </MudGrid>
+                    </MudForm>
+                }
+            </MudCardContent>
+             <MudCardActions Class="pa-4 justify-end">
+                 <MudButton Variant="Variant.Text" OnClick="Cancel" Class="mr-2">Cancel</MudButton>
+                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit" StartIcon="@Icons.Material.Filled.Save" Disabled="@_loading">Update Payment</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public int PaymentId { get; set; }
+
+    private StudentPaymentDto payment;
+    private DateTime? PaymentDate;
+    private bool _loading = true;
+    private MudForm _form;
+    private bool _success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            payment = await StudentPaymentService.GetStudentPaymentByIdAsync(PaymentId);
+            if (payment != null)
+            {
+                PaymentDate = payment.Paid_Date;
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading payment: {ex.Message}", Severity.Error);
+            MudDialog.Cancel();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task Submit()
+    {
+        _form.Validate();
+        if (_form.IsValid)
+        {
+            try
+            {
+                if (PaymentDate.HasValue)
+                {
+                    payment.Paid_Date = PaymentDate.Value;
+                }
+
+                await StudentPaymentService.UpdateStudentPaymentAsync(payment);
+                Snackbar.Add("Payment updated successfully", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error updating payment: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

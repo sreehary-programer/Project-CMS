@@ -1,0 +1,223 @@
+﻿@using BCA007.Shared.Service.AMS
+@using BCA007.Shared.Service.Core
+@inject ISnackbar _snackbar
+@inject ITimeTableService _serv
+@inject ILookupService _lookup
+
+<MudDialog>
+    <DialogContent>
+        @* <EditForm>
+            <DataAnnotationsValidator /> *@
+        <MudPaper Class="pa-6 mt-6" Elevation="2">
+
+            <MudText Typo="Typo.h6" Class="mb-4">
+                Timetable Creation
+            </MudText>
+
+            <MudForm @ref="_form" Model="Model">
+
+                <MudGrid Spacing="3">
+
+                    <!-- Class -->
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="int?"
+                                   @bind-Value="Model.ClassID"
+                                   Required="true"
+                                   Label="Class"
+                                   Variant="Variant.Outlined"
+                                   Adornment="Adornment.Start"
+                                   AdornmentIcon="@Icons.Material.Filled.School">
+                            @foreach (var option in _class)
+                            {
+                                <MudSelectItem Value="@option.Id">
+                                    @option.Text
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <!-- Subject -->
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="int?"
+                                   @bind-Value="Model.SubjectID"
+                                   Required="true"
+                                   Label="Subject"
+                                   Variant="Variant.Outlined"
+                                   Adornment="Adornment.Start"
+                                   AdornmentIcon="@Icons.Material.Filled.MenuBook">
+                            @foreach (var option in _subject)
+                            {
+                                <MudSelectItem Value="@option.Id">
+                                    @option.Text
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <!-- Period -->
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="int?"
+                                   @bind-Value="Model.PeriodID"
+                                   Required="true"
+                                   Label="Period"
+                                   Variant="Variant.Outlined"
+                                   Adornment="Adornment.Start"
+                                   AdornmentIcon="@Icons.Material.Filled.Schedule">
+                            @foreach (var option in _period)
+                            {
+                                <MudSelectItem Value="@option.Id">
+                                    @option.Text
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <!-- Faculty -->
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="int?"
+                                   @bind-Value="Model.FacultyID"
+                                   Required="true"
+                                   Label="Faculty"
+                                   Variant="Variant.Outlined"
+                                   Adornment="Adornment.Start"
+                                   AdornmentIcon="@Icons.Material.Filled.Person">
+                            @foreach (var option in _faculty)
+                            {
+                                <MudSelectItem Value="@option.Id">
+                                    @option.Text
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <!-- Date -->
+                    <MudItem xs="12" md="6">
+                        <MudDatePicker @bind-Date="Model.Date"
+                                       Label="Date"
+                                       Required="true"
+                                       Variant="Variant.Outlined"
+                                       Adornment="Adornment.Start"
+                                       AdornmentIcon="@Icons.Material.Filled.CalendarMonth" />
+                    </MudItem>
+
+                </MudGrid>
+
+            </MudForm>
+
+        </MudPaper>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <MudAlert Severity="Severity.Error" Dense Class="mt-2">
+                @_error
+            </MudAlert>
+        }
+        @*  </EditForm> *@
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Color="@(Action == "Delete" ? Color.Error : Color.Success)"
+                   Disabled="_loading"
+                   OnClick="SaveAsync">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate Size="Size.Small" />
+            }
+            else
+            {
+                @(Action == "Edit" ? "Update" : Action)
+
+            }
+        </MudButton>
+        <MudButton OnClick="Cancel">
+            Cancel
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [Parameter]
+    public TimetableDto Model { get; set; } = new();
+    [Parameter]
+    public string Action { get; set; } = "";
+    private List<LookupItemDto> _class = new();
+    private List<LookupItemDto> _period = new();
+    private List<LookupItemDto> _subject = new();
+    private List<LookupItemDto> _faculty = new();
+
+
+
+
+
+
+    [CascadingParameter]
+    private IMudDialogInstance _MudDialog { get; set; } = default!;
+
+    private MudForm _form = default!;
+    private bool _loading;
+    private string? _error;
+    protected override async Task OnInitializedAsync()
+    {
+        _class = await _lookup.GetClassesAsync();
+        _period = await _lookup.GetPeriodAsync();
+        _subject = await _lookup.GetSubjetAsync();
+        _faculty = await _lookup.GetTeacherAsync();
+
+
+
+
+        await InvokeAsync(StateHasChanged);
+    }
+    private async Task SaveAsync()
+    {
+        _error = null;
+
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _loading = true;
+
+        try
+        {
+            if ((Model.Id == 0) || (Action == "Create"))
+            {
+                var created = await _serv.CreateAsync(Model);
+                Model.Id = created.Id;
+                _snackbar.Add("Timetable created successfully", Severity.Success);
+            }
+            else if (Action == "Delete")
+            {
+                await _serv.DeleteAsync(Model.Id);
+                _snackbar.Add("Timetable deleted successfully", Severity.Success);
+            }
+            else
+            {
+                await _serv.UpdateAsync(Model);
+                _snackbar.Add("Timetable updated successfully", Severity.Success);
+            }
+
+            _MudDialog.Close(DialogResult.Ok(Model));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add(ex.Message, Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add("Failed to save Timetable", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        _MudDialog.Close(DialogResult.Cancel());
+    }
+}

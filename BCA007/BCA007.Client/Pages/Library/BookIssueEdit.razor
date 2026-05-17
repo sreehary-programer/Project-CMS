@@ -1,0 +1,295 @@
+﻿@using BCA007.Shared.DTOs
+@using BCA007.Shared.Service.Core
+@using BCA007.Shared.Service.Library
+@inject ISnackbar _snackbar
+@inject IBookService _serv
+@inject ILookupService _lookup
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" Model="Model">
+            <MudGrid Spacing="3">
+
+                <!-- ================= LEFT COLUMN (Photo) ================= -->
+                <MudItem xs="12" md="4" Class="d-flex justify-center">
+                   
+                            <div style="position:relative; cursor:pointer;">
+
+                                <MudAvatar Elevation="3" Size="Size.Large" Style="width:150px;height:150px;border:solid 3px #717171">
+                                    <MudImage Src="@PreviewOrPhoto" Style="object-fit:cover" />
+                                </MudAvatar>
+                            </div>
+                
+                </MudItem>
+                <!-- ================= RIGHT COLUMN (Form) ================= -->
+                <MudItem xs="12" md="8">
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12">
+                            <MudStaticTextField Label="Title"
+                                                For="@(() => Model.Title)"
+                                                @bind-Value="Model.Title" ReadOnly="true"/>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudStaticTextField Label="Author"
+                                                For="@(() => Model.Author)"
+                                                @bind-Value="Model.Author" ReadOnly="true" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudStaticTextField Label="Edition"
+                                                For="@(() => Model.Edition)"
+                                                @bind-Value="Model.Edition" ReadOnly="true" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudStaticTextField Label="Volumn"
+                                                For="@(() => Model.Volume)"
+                                                @bind-Value="Model.Volume" ReadOnly="true" />
+                        </MudItem>
+
+                        <MudItem xs="12" sm="4">
+                            @*  <MudAutocomplete T="int?" *@
+                            @* @bind-Value="Model.Parent_Id"
+                                             Label="Parent Name"
+                                             Variant="Variant.Outlined"
+                                             Required="true"
+                                             Placeholder="Parent Name"
+                                             Adornment="Adornment.Start"
+                                             AdornmentIcon="@Icons.Material.Filled.AddModerator"
+                                             AdornmentColor="Color.Primary"
+                                             SearchFunc="SearchUserNames"
+                                             ToStringFunc="ParentIdToText"
+                                             Clearable="true" />
+ *@
+                        </MudItem>
+                           
+                    </MudGrid>
+                </MudItem>
+                 <MudItem xs="12" md="12">
+                    @{
+                        bool act = Action == "Issue" ? false : true;
+                        <MudSelect T="int?" @bind-Value="Model.Issued_To"  Required="true" Label="Issued To" Variant="Variant.Outlined" Placeholder="UserName" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.AddModerator" AdornmentColor="Color.Primary">
+                        @foreach (var _option in _users)
+                        {
+                            <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                        }
+						</MudSelect>
+					}
+                </MudItem>
+                <MudItem xs="12" md="5">
+                    @{
+                        if (Model.Issued_Date is not null)
+                        {
+
+                            var ct = Model.Issued_Date.Value.ToString("dd MMM yyyy");
+                            <MudChip T="string" Color="Color.Info">Issued date : @ct</MudChip>
+                        }
+                    }
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    @{
+                            if (Model.Issued_Date != null)
+                            {
+
+                                var dt = Model.Issued_Date.Value.AddDays(10).ToString("dd MMM yyyy");
+                                if (Model.Issued_Date.Value.AddDays(10) < DateTime.Now)
+                                {
+                                    <MudChip T="string" Color="Color.Error">Due date : @dt</MudChip>
+                                }
+                                else
+                                {
+                                    <MudChip T="string" Color="Color.Success">Due date : @dt</MudChip>
+                                }
+
+                            }
+                    }
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    @{
+                        @if (Model.Fine > 0)
+                        {
+                            var ct = Model.Fine.Value;
+                            <MudChip T="decimal" Color="Color.Warning">Fine: @ct</MudChip>
+                        }
+                    }
+                </MudItem>
+                @*  <MudItem xs="12" md="6">
+                    <MudSelect T="int?" @bind-Value="Model.UserName"
+                               Required="true" Label="Select a Publisher"
+                               Variant="Variant.Outlined" Placeholder="Please Select Publisher"
+                               Adornment="Adornment.Start"
+                               AdornmentIcon="@Icons.Material.Filled.BuildCircle"
+                               AdornmentColor="Color.Primary">
+                        @foreach (var _option in _UserName)
+                        {
+                            <MudSelectItem Value="@_option.Id">@_option.Text</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                </MudItem>  *@
+               
+            </MudGrid>
+
+        </MudForm>
+
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <MudAlert Severity="Severity.Error" Dense Class="mt-2">
+                @_error
+            </MudAlert>
+        }
+        @* </EditForm> *@
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Color="@(Action == "Delete" ? Color.Error : Color.Success)"
+                   Disabled="_loading"
+                   OnClick="SaveAsync">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate Size="Size.Small" />
+            }
+            else
+            {
+                @Action
+            }
+        </MudButton>
+        <MudButton OnClick="Cancel">
+            Cancel
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [Parameter]
+    public BookViewDto Model { get; set; } = new();
+    [Parameter]
+    public string Action { get; set; } = "Create";
+
+    [CascadingParameter]
+    private IMudDialogInstance _MudDialog { get; set; } = default!;
+
+    private MudForm _form = default!;
+    private bool _loading;
+    private string? _error;
+
+    private List<LookupItemDto> _users = new();
+
+    private string? _preview;
+
+    string PreviewOrPhoto =>
+        _preview ?? Model.ThumbURL ?? "/images/default-user.png";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _users = await _lookup.GetUsersAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _loading = true;
+
+        try
+        {
+            if (Action == "Delete")
+            {
+                //await _servIssueView.DeleteAsync(ModelIssue.Id);
+                _snackbar.Add("Book deleted successfully", Severity.Success);
+            }
+            else if (Action == "Issue")
+            {
+                BookDto entity = new BookDto
+                    {
+                        Id = Model.Id,
+                        Issued_To = Model.Issued_To,
+                        Issued_Date = DateTime.Now,
+                        //Due_Date = DateTime.Today.AddDays(10),
+                    };
+                await _serv.UpdateIssueAsync(entity);
+                _snackbar.Add("Book issued successfully", Severity.Success);
+			}
+			else if (Action == "Return")
+			{
+                decimal fine = 0;
+
+                if (Model.Due_Date.HasValue)
+                {
+                    var daysLate = (DateTime.Today - Model.Due_Date.Value).Days;
+
+                    if (daysLate > 0)
+                        fine = daysLate * 2; // ₹2 per day
+                }
+                BookDto entity = new BookDto
+                {
+                    Id = Model.Id,
+                    Issued_To = -1,
+                    Issued_Date = null,
+                    //Return_Date = DateTime.Today,
+                };
+                await _serv.UpdateIssueAsync(entity);
+				_snackbar.Add("Book returned successfully", Severity.Success);
+			}
+            else
+            {
+                
+                _snackbar.Add("Book not returned successfully", Severity.Success);
+            }
+
+            _MudDialog.Close(DialogResult.Ok(Model));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add(ex.Message, Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            _error = "Unexpected error occurred.";
+            _snackbar.Add("Failed to save book", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    // private async Task OpenIssueDialog(BookDto book)
+    // {
+    //     if (book == null)
+    //         return;
+    //     var parameters = new DialogParameters
+    //     {
+    //         { "BookId", book.Id },
+    //         { "BookTitle", book.Title }
+    //     };
+       
+    //     var options = new DialogOptions
+    //     {
+    //         CloseButton = true,
+    //         MaxWidth = MaxWidth.Small,
+    //         FullWidth = true
+    //     };
+
+    //     var dialog = _serv.Show<BookIssueDialog>("Issue Book", parameters, options);
+    //     var result = await dialog.Result;
+
+    //     if (!result.Canceled)
+    //     {
+    //         _snackbar.Add("Book issued successfully", Severity.Success);
+
+    //         await Books();   
+    //         StateHasChanged();
+    //     }
+    
+    // }
+
+    private void Cancel()
+    {
+        _MudDialog.Close(DialogResult.Cancel());
+    }
+}

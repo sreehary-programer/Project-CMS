@@ -1,0 +1,160 @@
+﻿@page "/ams/activitieslist"
+@using BCA007.Shared.DTOs.AMS
+@using BCA007.Shared.Service.AMS
+@inject ISnackbar _snackbar
+@inject IActivitiesService _serv
+@inject IDialogService _dialog
+
+<MudPaper Class="pa-0 mt-6">
+    <MudDataGrid Dense Hover Items="_courses" Loading="_loading"
+                 QuickFilter="QuickFilter"
+                 SortMode="SortMode.Multiple"
+                 @ref="_grid">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Activities List</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            <MudButtonGroup Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="CreateDetails">
+                    Add
+                </MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.Refresh"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Refresh
+                </MudButton>
+               @*  <MudButton StartIcon="@Icons.Material.Filled.Help"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Help
+                </MudButton> *@
+            </MudButtonGroup>
+        </ToolBarContent>
+
+        <Columns>
+            <PropertyColumn Property="x => x.ActivityName" Title="Activity Name" />
+            <PropertyColumn Property="x => x.Description" Title="Description" />
+            <TemplateColumn Title="Actions">
+                <CellTemplate Context="row">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Color="Color.Primary" Size="Size.Small"
+                                   OnClick="@(() => EditDetails(row.Item))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Color="Color.Error" Size="Size.Small"
+                                   OnClick="@(() => DeleteDetails(row.Item))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
+        </PagerContent>
+    </MudDataGrid>
+
+</MudPaper>
+
+@code {
+    private MudDataGrid<ActivitiesDto> _grid;
+    private List<ActivitiesDto> _courses = new();
+    private string _searchString = string.Empty;
+    private bool _loading;
+    protected override async Task OnInitializedAsync()
+    {
+        OnRefresh();
+    }
+    private bool QuickFilter(ActivitiesDto x)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        return x.Description.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.ActivityName.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Id.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+    }
+    private void OnSearch(string text)
+    {
+        _searchString = text;
+        OnRefresh();
+    }
+    private async void OnRefresh()
+    {
+        try
+        {
+            _loading = true;
+            //await Task.Delay(700);
+            _courses = await _serv.GetAllAsync();
+            if (_grid != null)
+                await _grid.ReloadServerData(); // keeps sort & page
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Success);
+        }
+        finally
+        {
+            _loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task CreateDetails()
+    {
+        await OpenDetailsDialog(new ActivitiesDto(), "Create");
+    }
+
+    private async Task EditDetails(ActivitiesDto dto)
+    {
+        // IMPORTANT: pass a COPY
+        await OpenDetailsDialog(new ActivitiesDto
+        {
+            Id = dto.Id,
+            ActivityName = dto.ActivityName,
+            Description = dto.Description
+        }, "Edit");
+    }
+    private async Task DeleteDetails(ActivitiesDto dto)
+    {
+        await OpenDetailsDialog(new ActivitiesDto
+        {
+            Id = dto.Id,
+            ActivityName = dto.ActivityName,
+            Description = dto.Description
+        }, "Delete");
+    }
+    private async Task OpenDetailsDialog(ActivitiesDto model, string action)
+    {
+        _loading = true;
+        var parameters = new DialogParameters
+        {
+            ["Model"] = model,
+            ["Action"] = action
+        };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false
+        };
+
+        var dialog = await _dialog.ShowAsync<ActivitiesEdit>(
+           $"{action} Activities",
+            parameters, options);
+
+        var result = await dialog.Result;
+        _loading = false;
+
+        if (result == null)
+            return;
+        if (result.Canceled)
+            return;
+        if (result.Data == null)
+            return;
+
+        OnRefresh();
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

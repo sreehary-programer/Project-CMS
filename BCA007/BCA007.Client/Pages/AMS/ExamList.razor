@@ -1,0 +1,190 @@
+﻿@page "/ams/examlist"
+@using BCA007.Shared.DTOs.AMS
+@using BCA007.Shared.Service.AMS
+@inject ISnackbar _snackbar
+@inject IExamService _serv
+@inject IDialogService _dialog
+@inject NavigationManager Nav
+<AuthorizeView>
+    <Authorized>
+<MudPaper Class="pa-0 mt-6">
+    <MudDataGrid Dense Hover Items="_exam" Loading="_loading"
+                 QuickFilter="QuickFilter"
+                 SortMode="SortMode.Multiple"
+                 @ref="_grid">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Exam List</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            <MudButtonGroup Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="CreateDetails">
+                    Add
+                </MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.Refresh"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Refresh
+                </MudButton>
+            @*     <MudButton StartIcon="@Icons.Material.Filled.Help"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Help
+                </MudButton> *@
+            </MudButtonGroup>
+        </ToolBarContent>
+
+        <Columns>
+             <PropertyColumn Property="x => x.Class_Name" Title="Class Name" />
+            <PropertyColumn Property="x => x.Subject_Name" Title="Subject Name" />
+            <PropertyColumn Property="x => x.SessionName" Title="Session Name" />
+            <PropertyColumn Property="x => x.Date" Title="Exam Date" Format="dd-MM-yyyy" />
+            <PropertyColumn Property="x => x.Time" Title="Exam Time"  />
+            <PropertyColumn Property="x => x.Exam_Type" Title="Exam Type" />
+            <PropertyColumn Property="x => x.Max_Mark" Title="Max Mark" />
+
+
+           
+
+          <TemplateColumn Title="Actions">
+                <CellTemplate Context="row">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Color="Color.Primary" Size="Size.Small"
+                                   OnClick="@(() => EditDetails(row.Item))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Color="Color.Error" Size="Size.Small"
+                                   OnClick="@(() => DeleteDetails(row.Item))" />
+
+                    <MudIconButton Icon="@Icons.Material.Filled.School"
+                                   Color="Color.Success"
+                                   Size="Size.Small"
+                                   OnClick="@(() => Nav.NavigateTo($"/ams/resultlist/{row.Item.Id}"))" />
+
+                </CellTemplate>
+            </TemplateColumn> 
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
+        </PagerContent>
+    </MudDataGrid>
+
+</MudPaper>
+    </Authorized>
+</AuthorizeView>
+@code {
+    private MudDataGrid<ExamTimeTableViewDto> _grid;
+    private List<ExamTimeTableViewDto> _exam = new();
+    private string _searchString = string.Empty;
+    private bool _loading;
+    protected override async Task OnInitializedAsync()
+    {
+        OnRefresh();
+    }
+    private bool QuickFilter(ExamTimeTableViewDto x)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        return x.Subject_Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.SessionName.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Class_Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Id.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+    }
+    private void OnSearch(string text)
+    {
+        _searchString = text;
+        OnRefresh();
+    }
+    private async void OnRefresh()
+    {
+        try
+        {
+            _loading = true;
+            //await Task.Delay(700);
+            _exam = await _serv.GetAllAsync();
+            
+            if (_grid != null)
+                await _grid.ReloadServerData(); // keeps sort & page
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Success);
+        }
+        finally
+        {
+            _loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task CreateDetails()
+    {
+        await OpenDetailsDialog(new ExamTimeTableDto(), "Create");
+    }
+
+    private async Task EditDetails(ExamTimeTableViewDto dto)
+    {
+        // IMPORTANT: pass a COPY
+        await OpenDetailsDialog(new ExamTimeTableDto
+        {
+            Id = dto.Id,
+            Date = dto.Date,
+            Class_Id = dto.Class_Id,
+            Time = dto.Time,
+            Subject_Id = dto.Subject_Id,
+            Session_Id = dto.Session_Id,
+            ExamType_Id=dto.ExamType_Id,
+            Max_Mark=dto.Max_Mark
+        }, "Edit");
+    }
+    private async Task DeleteDetails(ExamTimeTableViewDto dto)
+    {
+        await OpenDetailsDialog(new ExamTimeTableDto
+        {
+            Id = dto.Id,
+            Date = dto.Date,
+            Class_Id = dto.Class_Id,
+            Time = dto.Time,
+            Subject_Id = dto.Subject_Id,
+            Session_Id = dto.Session_Id,
+            ExamType_Id = dto.ExamType_Id,
+            Max_Mark = dto.Max_Mark
+        }, "Delete");
+    }
+    private async Task OpenDetailsDialog(ExamTimeTableDto model, string action)
+    {
+        _loading = true;
+        var parameters = new DialogParameters
+        {
+            ["Model"] = model,
+            ["Action"] = action
+        };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false
+        };
+
+        var dialog = await _dialog.ShowAsync<ExamEdit>(
+           $"{action} Exam",
+            parameters, options);
+
+        var result = await dialog.Result;
+        _loading = false;
+
+        if (result == null)
+            return;
+        if (result.Canceled)
+            return;
+        if (result.Data == null)
+            return;
+
+        OnRefresh();
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

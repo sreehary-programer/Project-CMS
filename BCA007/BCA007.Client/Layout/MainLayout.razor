@@ -1,0 +1,98 @@
+﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject IJSRuntime JS
+
+<MudThemeProvider @bind-IsDarkMode="_isDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudStaticNavDrawerToggle DrawerId="nav-drawer" Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" />
+        <MudText Typo="Typo.h5" Class="ml-3">DR.APJ ABDUL KALAM COLLEGE OF PROFFESSIONAL STUDIES</MudText>
+        <MudSpacer />
+        <MudChip T="string" Icon="@Icons.Material.Filled.AccessTime" Color="Color.Default" Variant="Variant.Text" Class="mr-2" Style="color: inherit;">
+            <span id="live-clock">@DateTime.Now.ToString("dd MMM yyyy  hh:mm:ss tt")</span>
+        </MudChip>
+        <MudTooltip Text="@(_isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode")">
+            <button type="button"
+                    onclick="darkModeHelper.toggle()"
+                    class="mud-button-root mud-icon-button mud-icon-button-edge-end mud-ripple mud-ripple-icon"
+                    style="color: inherit; background: transparent; border: none; cursor: pointer; padding: 8px;"
+                    id="dark-mode-toggle">
+                <span class="mud-icon-button-label">
+                    <MudIcon Icon="@(_isDarkMode? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" />
+                </span>
+            </button>
+        </MudTooltip>
+    </MudAppBar>
+    <MudDrawer id="nav-drawer" @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+        <NavMenu />
+    </MudDrawer>
+    <MudMainContent Class="pt-16 pa-4">
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _isDarkMode = true;
+    private DotNetObjectReference<MainLayout>? _dotNetRef;
+
+    [CascadingParameter(Name = "InitialDarkMode")]
+    private bool InitialDarkMode { get; set; } = true;
+
+    protected override void OnInitialized()
+    {
+        _isDarkMode = InitialDarkMode;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                // Register this component so JS can call back into Blazor
+                _dotNetRef = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("darkModeHelper.registerDotNetRef", _dotNetRef);
+
+                // Start the JS-driven clock
+                await JS.InvokeVoidAsync("clockHelper.start");
+
+                // Sync dark mode preference from localStorage
+                var isDark = await JS.InvokeAsync<bool>("darkModeHelper.get");
+                if (_isDarkMode != isDark)
+                {
+                    _isDarkMode = isDark;
+                    StateHasChanged();
+                }
+            }
+            catch
+            {
+                // JS interop not available (SSR) — keep defaults
+            }
+        }
+    }
+
+    /// <summary>
+    /// Called from JavaScript when the dark mode toggle is clicked on interactive pages.
+    /// </summary>
+    [JSInvokable]
+    public void ToggleDarkModeFromJs(bool isDark)
+    {
+        _isDarkMode = isDark;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _dotNetRef?.Dispose();
+    }
+}

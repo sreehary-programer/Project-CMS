@@ -1,0 +1,174 @@
+﻿@page "/profile/staffprofilelist"
+@using BCA007.Shared.Service.Staff
+@inject IStaffProfileService _serv
+
+<MudContainer MaxWidth="MaxWidth.Large">
+
+    <MudText Typo="Typo.h5" Class="mb-4">
+        Staff Profiles
+    </MudText>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate />
+    }
+    else
+    {
+        @foreach (var staff in _list)
+        {
+            <!-- STUDENT CARD -->
+            <MudPaper Elevation="4" Class="pa-4 mb-4">
+
+                <MudGrid Spacing="3" Style="background-color: white;">
+
+                    <!-- PERSONAL DETAILS -->
+                    <MudItem xs="12" md="4">
+                        <MudPaper Elevation="2" Class="pa-4 text-center">
+
+                            <MudAvatar Size="Size.Large" Class="mb-2">
+                                <MudImage Src="@(
+                                          staff.ProfileURL
+                                          ?? "/images/defaultuser.png")" />
+                    </MudAvatar>
+
+                            <MudText Typo="Typo.h6">
+                                @staff.FullName
+                            </MudText>
+
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @staff.Email
+                            </MudText>
+
+                            <MudText Typo="Typo.body2">
+                                📞 @staff.PhoneNumber
+                            </MudText>
+                            <br /><br /><br />
+
+                        </MudPaper>
+                    </MudItem>
+
+                    <!-- ACADEMIC DETAILS -->
+                    <MudItem xs="12" md="8">
+                        <MudPaper Elevation="2" Class="pa-4">
+
+                            <MudText Typo="Typo.h6" Class="mb-2">
+                                Academic Information
+                            </MudText>
+
+                            <MudDivider Class="mb-2" />
+
+                            <MudGrid>
+                                <MudItem xs="6"><b>User Name</b></MudItem>
+                                <MudItem xs="6">@staff.UserName</MudItem>
+
+
+
+                                <MudItem xs="6"><b>Gender</b></MudItem>
+                                <MudItem xs="6">@staff.Gender_Name</MudItem>
+
+                                <MudItem xs="6"><b>Date of Birth</b></MudItem>
+                                <MudItem xs="6">
+                                    @staff.DateOfBirth?.ToString("dd MMM yyyy")
+                                </MudItem>
+                            </MudGrid>
+
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" md="12">
+                        <MudPaper Elevation="2" Class="pa-4">
+
+                            <MudText Typo="Typo.h6" Class="mb-2">
+                                other info
+                            </MudText>
+
+                            <MudDivider Class="mb-2" />
+
+                            <MudGrid>
+                                <MudItem xs="6"><b>User Name</b></MudItem>
+                                <MudItem xs="6">@staff.UserName</MudItem>
+
+
+                                <MudItem xs="6"><b>Gender</b></MudItem>
+                                <MudItem xs="6">@staff.Gender_Name</MudItem>
+
+                                <MudItem xs="6"><b>Date of Birth</b></MudItem>
+                                <MudItem xs="6">
+                                    @staff.DateOfBirth?.ToString("dd MMM yyyy")
+                                </MudItem>
+                            </MudGrid>
+
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudPaper Elevation="2" Class="pa-4 text-center">
+                            <MudText Typo="Typo.h6" Class="mb-2">
+                                Hostel
+                            </MudText>
+                            <MudAvatar Size="Size.Large" Class="mb-2">
+                                <MudImage Src="@(
+                                                staff.ProfileURL
+                                                ?? "/images/defaultuser.png")" />
+                    </MudAvatar>
+
+                            <MudText Typo="Typo.h6">
+                                @staff.FullName
+                            </MudText>
+
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @staff.Email
+                            </MudText>
+
+                            <MudText Typo="Typo.body2">
+                                📞 @staff.PhoneNumber
+                            </MudText>
+                            <br /><br /><br />
+
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudPaper Elevation="2" Class="pa-4 text-center">
+                            <MudText Typo="Typo.h6" Class="mb-2">
+                                Attendence And Fees
+                            </MudText>
+                            <MudAvatar Size="Size.Large" Class="mb-2">
+                                <MudImage Src="@(
+                                                  staff.ProfileURL
+                                                ?? "/images/defaultuser.png")" />
+                             </MudAvatar>
+                            <MudText Typo="Typo.h6">
+                             @staff.FullName
+                            </MudText>
+
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @staff.Email
+                            </MudText>
+
+                            <MudText Typo="Typo.body2">
+                                📞 @staff.PhoneNumber
+                            </MudText>
+                            <br /><br /><br />
+
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+
+            </MudPaper>
+        }
+    }
+
+</MudContainer>
+
+@code {
+    private List<StaffViewDto> _list = new();
+    private bool _loading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        _list = await _serv.GetAllAsync();
+        _loading = false;
+    }
+}

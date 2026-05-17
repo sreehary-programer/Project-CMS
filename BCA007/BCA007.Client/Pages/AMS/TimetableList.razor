@@ -1,0 +1,185 @@
+﻿@page "/timetable/timetablelist"
+@using BCA007.Shared.Service.AMS
+@inject ISnackbar _snackbar
+@inject ITimeTableService _serv
+@inject IDialogService _dialog
+<AuthorizeView>
+    <Authorized>
+<MudPaper Class="pa-0 mt-6">
+    <MudDataGrid Dense Hover Items="_courses" Loading="_loading"
+                 QuickFilter="QuickFilter" 
+                 SortMode="SortMode.Multiple"
+                 @ref="_grid">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Time Table</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            <MudButtonGroup Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="CreateDetails">
+                    Add
+                </MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.Refresh"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Refresh
+                </MudButton>
+              @*   <MudButton StartIcon="@Icons.Material.Filled.Help"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="OnRefresh">
+                    Help
+                </MudButton> *@
+            </MudButtonGroup>
+        </ToolBarContent>
+
+         <Columns>
+           
+            <PropertyColumn Property="x => x.Date" Title="Date"  Format="dd MMM yyyy dddd" />
+            <PropertyColumn Property="x => x.Class_Name" Title="Class" />
+            <PropertyColumn Property="x => x.Period_Name" Title="Period" />
+            <PropertyColumn Property="x => x.Subject_Name" Title="Subject Name" />
+            <PropertyColumn Property="x => x.FullName" Title="Faculty" />
+
+
+            
+            <TemplateColumn Title="Actions">
+                <CellTemplate Context="row">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Color="Color.Primary" Size="Size.Small"
+                                   OnClick="@(() => EditDetails(row.Item))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Color="Color.Error" Size="Size.Small"
+                                   OnClick="@(() => DeleteDetails(row.Item))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns> 
+        <PagerContent>
+            <MudDataGridPager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
+        </PagerContent>
+    </MudDataGrid>
+
+</MudPaper>
+</Authorized>
+</AuthorizeView>
+@code {
+    private MudDataGrid<TimetableViewDto> _grid;
+    private List<TimetableViewDto> _courses = new();
+    private string _searchString = string.Empty;
+    private bool _loading;
+    protected override async Task OnInitializedAsync()
+    {
+        OnRefresh();
+    }
+    private bool QuickFilter(TimetableViewDto x)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        return
+     x.Subject_Code.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+  || x.Subject_Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+  || x.Class_Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+  || x.FullName.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+  || x.Period_Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+|| (x.Date.HasValue &&
+    x.Date.Value.ToString("dd MMM yyyy dddd")
+        .Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+
+
+  || x.Id.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+
+    }
+    private void OnSearch(string text)
+    {
+        _searchString = text;
+        OnRefresh();
+    }
+    private async void OnRefresh()
+    {
+        try
+        {
+            _loading = true;
+            //await Task.Delay(700);
+            _courses = await _serv.GetAllAsync();
+
+            if (_grid != null)
+                await _grid.ReloadServerData(); ; // keeps sort & page
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Success);
+        }
+        finally
+        {
+            _loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task CreateDetails()
+    {
+        await OpenDetailsDialog(new TimetableDto(), "Create");
+    }
+
+    private async Task EditDetails(TimetableViewDto dto)
+    {
+        // IMPORTANT: pass a COPY
+        await OpenDetailsDialog(new TimetableDto
+        {
+            Id = dto.Id,
+            ClassID = dto.ClassID,
+            PeriodID = dto.PeriodID,
+            SubjectID = dto.SubjectID,
+            FacultyID = dto.FacultyID,
+            Date = dto.Date
+        }, "Edit");
+    }
+    private async Task DeleteDetails(TimetableViewDto dto)
+    {
+        await OpenDetailsDialog(new TimetableDto
+        {
+            Id = dto.Id,
+            ClassID = dto.ClassID,
+            PeriodID = dto.PeriodID,
+            SubjectID = dto.SubjectID,
+            FacultyID = dto.FacultyID,
+            Date = dto.Date
+        }, "Delete");
+    }
+    private async Task OpenDetailsDialog(TimetableDto model, string action)
+    {
+        _loading = true;
+        var parameters = new DialogParameters
+        {
+            ["Model"] = model,
+            ["Action"] = action
+        };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false
+        };
+
+        var dialog = await _dialog.ShowAsync<TimeTableEdit>(
+           $"{action} TimeTable",
+            parameters, options);
+
+        var result = await dialog.Result;
+        _loading = false;
+
+        if (result == null)
+            return;
+        if (result.Canceled)
+            return;
+        if (result.Data == null)
+            return;
+
+        OnRefresh();
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

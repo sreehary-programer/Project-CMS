@@ -1,0 +1,24 @@
+﻿@page "/Account/logout"
+@using BCA007.Data
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+
+@inject NavigationManager Nav
+@inject IHttpContextAccessor HttpContextAccessor
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await HttpContextAccessor.HttpContext!.SignOutAsync();
+        try
+        {
+            Nav.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            var msg = ex.Message;
+            Nav.NavigateTo("/");
+        }
+
+    }
+}

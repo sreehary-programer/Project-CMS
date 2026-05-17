@@ -1,0 +1,125 @@
+﻿@using BCA007.Shared.Service.AMS
+@inject ISubjectService _serv
+@inject ISnackbar _snackbar
+<MudDialog>
+    <DialogContent>
+        <MudPaper Class="pa-6 mt-6 rounded-lg" Elevation="2">
+
+            <MudText Typo="Typo.h6" Class="mb-4">
+                Subject Details
+            </MudText>
+
+          @*   <EditForm Model="Model">
+                <DataAnnotationsValidator /> *@
+
+                <MudForm @ref="_form">
+
+                    <MudGrid Spacing="3">
+
+                        <MudItem xs="12" md="6">
+                            <MudTextField Label="Subject Name"
+                                          For="@(() => Model.Subject_Name)"
+                                          @bind-Value="Model.Subject_Name"
+                                          Variant="Variant.Outlined"
+                                          Required="true"
+                                          Immediate="true"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.MenuBook" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudTextField Label="Subject Code"
+                                          For="@(() => Model.Subject_Code)"
+                                          @bind-Value="Model.Subject_Code"
+                                          Variant="Variant.Outlined"
+                                          Required="true"
+                                          Immediate="true"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Tag" />
+                        </MudItem>
+
+                    </MudGrid>
+
+                </MudForm>
+
+                @if (!string.IsNullOrWhiteSpace(_error))
+                {
+                    <MudAlert Severity="Severity.Error"
+                              Dense="true"
+                              Class="mt-4">
+                        @_error
+                    </MudAlert>
+                }
+
+            @*</ EditForm> *@
+
+        </MudPaper>
+
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="@(Action == "Delete" ? Color.Error : Color.Success)" Disabled="_loading" OnClick="OnSaveAsync">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate Size="Size.Small" />
+            }
+            else
+            {
+                @(Action == "Edit" ? " Update" : Action)
+            }
+        </MudButton>
+        <MudButton Color="Color.Tertiary" OnClick="OnCancel">Cancel</MudButton>
+    </DialogActions>
+
+</MudDialog>
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance _MudDialog { get; set; } = default!;
+    [Parameter]
+    public SubjectDto Model { get; set; } = new();
+    [Parameter]
+    public String Action { get; set; } = "";
+    private bool _loading;
+    private MudForm? _form;
+    private string? _error;
+    private async Task OnSaveAsync()
+    {
+        _error = null;
+        await _form!.Validate();
+        if (!_form.IsValid)
+            return;
+        try
+        {
+            if (Action == "Create")
+            {
+                var create = await _serv.CreateAsync(Model);
+                Model.Id = create.Id;
+                _snackbar.Add("Subject created successfully", Severity.Success);
+
+            }
+            else if (Action == "Delete")
+            {
+                await _serv.DeleteAsync(Model.Id);
+                _snackbar.Add("Subject deleted successfully", Severity.Success);
+
+            }
+            else
+            {
+                await _serv.UpdateAsync(Model);
+                _snackbar.Add("Subject Updated successfully", Severity.Success);
+
+            }
+            _MudDialog.Close(DialogResult.Ok(Model));
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _snackbar.Add("Failed to save Subject", Severity.Error);
+        }
+
+
+    }
+    private async Task OnCancel()
+    {
+        _MudDialog.Close(DialogResult.Cancel());
+    }
+}
